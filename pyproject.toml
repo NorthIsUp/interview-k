@@ -49,14 +49,14 @@ lint.extend-select = [
     "YTT",   # modern syntax
 ]
 lint.ignore = [
-    "A002",
-    "A005",
-    "COM812",  # conflicts with ruff format
-    "ISC001",  # conflicts with ruff format
+    "builtin-argument-shadowing",
+    "stdlib-module-shadowing",
+    "missing-trailing-comma",  # conflicts with ruff format
+    "single-line-implicit-string-concatenation",  # conflicts with ruff format
 ]
 lint.extend-safe-fixes = [
     "FA",
-    "FA102",
+    "future-required-type-annotation",
     "TC",
     "UP",
 ]
@@ -67,8 +67,8 @@ lint.flake8-type-checking.runtime-evaluated-base-classes = [
 lint.future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN", "PLR2004"]
-"scripts/**" = ["T100", "ANN001", "ANN201", "EXE001", "EXE002"]
+"tests/**" = ["ANN", "magic-value-comparison"]
+"scripts/**" = ["debugger", "missing-type-function-argument", "missing-return-type-undocumented-public-function", "shebang-not-executable", "shebang-missing-executable-file"]
 
 [tool.pyproject-fmt]
 column_width      = 1
