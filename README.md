@@ -29,8 +29,8 @@ or a bare REPL.
 ```python
 from interview_k import show
 
-show(points)                  # one group -> every point is '·'
-show(*clusters)               # one mark per group, in argument order
+show(points)  # one group -> every point is '·'
+show(*clusters)  # one mark per group, in argument order
 show(*clusters, centroids=C)  # centroids overlaid as their group's digit
 ```
 

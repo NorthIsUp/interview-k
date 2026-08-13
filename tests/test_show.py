@@ -47,7 +47,7 @@ def test_accepts_a_generator(capsys: pytest.CaptureFixture[str]) -> None:
 def test_explicit_size_is_honored(capsys: pytest.CaptureFixture[str]) -> None:
     show(SQUARE, width=30, height=7)
     lines = capsys.readouterr().out.splitlines()
-    assert len(lines) == 9                      # 7 rows + 2 rules
+    assert len(lines) == 9  # 7 rows + 2 rules
     assert all(len(line) >= 31 for line in lines)
 
 

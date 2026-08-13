@@ -23,7 +23,7 @@ from shutil import get_terminal_size
 
 Group = Iterable[Sequence[float]]
 
-MARKS = "●▲■◆★✚✦❖"       # if your terminal misaligns these, use "oxv+*#@%"
+MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
 UNLABELED = "·"
 
 
@@ -70,15 +70,15 @@ def show(  # ruff: ignore[too-many-locals]
     dx, dy = (x1 - x0) or 1.0, (y1 - y0) or 1.0
 
     cols, rows = get_terminal_size((80, 24))
-    w = width or max(20, min(120, cols - 2))     # 2 for the │ borders
-    h = height or max(5, min(60, rows - 4))      # 2 rules + title + prompt
+    w = width or max(20, min(120, cols - 2))  # 2 for the │ borders
+    h = height or max(5, min(60, rows - 4))  # 2 rules + title + prompt
 
     cell: dict[tuple[int, int], list[str]] = {}
 
     def place(pts: list[tuple[float, float]], ch: str) -> None:
         for x, y in pts:
             c = min(w - 1, max(0, round((x - x0) / dx * (w - 1))))
-            r = min(h - 1, max(0, round((y1 - y) / dy * (h - 1))))   # flip y
+            r = min(h - 1, max(0, round((y1 - y) / dy * (h - 1))))  # flip y
             cell.setdefault((r, c), []).append(ch)
 
     solo = len(parsed) == 1
@@ -89,7 +89,7 @@ def show(  # ruff: ignore[too-many-locals]
 
     grid = [[" "] * w for _ in range(h)]
     for (r, c), chs in cell.items():
-        digits = [x for x in chs if x.isdigit()]      # centroid always wins its cell
+        digits = [x for x in chs if x.isdigit()]  # centroid always wins its cell
         grid[r][c] = digits[0] if digits else Counter(chs).most_common(1)[0][0]
 
     bar = "─" * w
@@ -106,11 +106,9 @@ def _demo() -> None:
     right = [p for p in quad if p[0] >= 0]
 
     show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(left, right, centroids=[(-2.5, 0.0), (2.5, 0.0)],
-         width=44, height=8, title="two groups + centroids")
+    show(left, right, centroids=[(-2.5, 0.0), (2.5, 0.0)], width=44, height=8, title="two groups + centroids")
     show((p for p in left), (p for p in right), width=44, height=8, title="generators")
-    show(quad, centroids=[(0.0, float("nan"))], width=44, height=8,
-         title="nan centroid does not crash")
+    show(quad, centroids=[(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
     show(width=44)
     try:
         import numpy as np
@@ -120,8 +118,7 @@ def _demo() -> None:
         rng = np.random.default_rng(1)
         pts = rng.normal(0, 1, (80, 2))
         lab = (pts[:, 0] > 0).astype(int)
-        show(pts[lab == 0], pts[lab == 1], centroids=np.array([[-1.0, 0.0], [1.0, 0.0]]),
-             width=44, title="ndarray groups, auto height")
+        show(pts[lab == 0], pts[lab == 1], centroids=np.array([[-1.0, 0.0], [1.0, 0.0]]), width=44, title="ndarray groups, auto height")
 
 
 if __name__ == "__main__":
