@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from interview_k.show import MARKS, show
+from interview_k.show import MARKS, Centroid, Point, show
 
-__all__ = ["MARKS", "show"]
+__all__ = ["MARKS", "Centroid", "Point", "show"]

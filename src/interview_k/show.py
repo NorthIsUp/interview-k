@@ -20,6 +20,25 @@ from collections import Counter
 from collections.abc import Iterable, Sequence
 from math import isfinite
 from shutil import get_terminal_size
+from typing import NamedTuple
+
+
+class Point(NamedTuple):
+    """An (x, y) pair. A tuple subclass, so anything taking a Sequence[float] accepts it.
+
+    Fields are `float`, which by the typing numeric tower also admits `int` — integer
+    coordinates (pixels, counts) are ordinary input. Centroids are the values that must
+    stay float: a mean is rarely an integer.
+    """
+
+    x: float
+    y: float
+
+
+# ponytail: an alias, not a second class. NamedTuples compare by value, so a distinct
+# Centroid class would still equal an identical Point at runtime — it buys a type-checker
+# hint and nothing else. Upgrade to a real class if you ever need them non-interchangeable.
+Centroid = Point
 
 Group = Iterable[Sequence[float]]
 

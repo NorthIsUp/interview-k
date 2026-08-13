@@ -114,4 +114,4 @@ reportUnusedImport                 = "error"
 strictDictionaryInference          = true
 strictListInference                = true
 strictSetInference                 = true
-typeCheckingMode                   = "basic"
+typeCheckingMode                   = "strict"

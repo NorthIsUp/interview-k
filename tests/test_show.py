@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from interview_k import show
+from interview_k import Centroid, Point, show
 
 if TYPE_CHECKING:
     import pytest
@@ -54,3 +54,28 @@ def test_explicit_size_is_honored(capsys: pytest.CaptureFixture[str]) -> None:
 def test_degenerate_all_points_identical(capsys: pytest.CaptureFixture[str]) -> None:
     show([(2.0, 2.0)] * 5, width=20, height=5)  # zero span must not divide by zero
     assert "·" in capsys.readouterr().out
+
+
+def test_point_is_a_tuple_and_unpacks() -> None:
+    p = Point(1.5, -2.0)
+    assert isinstance(p, tuple)
+    assert tuple(p) == (1.5, -2.0)
+    assert (p.x, p.y) == (1.5, -2.0)
+
+
+def test_point_accepts_integer_coordinates() -> None:
+    p = Point(3, 4)  # pixels/counts are ordinary input; the numeric tower allows it
+    assert p.x == 3
+
+
+def test_centroid_is_an_alias_of_point() -> None:
+    assert Centroid is Point
+    assert Point(1.0, 2.0) == Centroid(1.0, 2.0)
+
+
+def test_show_accepts_named_tuples(capsys: pytest.CaptureFixture[str]) -> None:
+    left = [Point(0, 0), Point(0, 1)]
+    right = [Point(1, 0), Point(1, 1)]
+    show(left, right, centroids=[Centroid(0.0, 0.5), Centroid(1.0, 0.5)], width=20, height=5)
+    out = capsys.readouterr().out
+    assert "●" in out and "▲" in out and "0" in out
