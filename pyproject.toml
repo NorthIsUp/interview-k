@@ -1,15 +1,15 @@
 [project]
-name            = "my-package"
+name            = "interview-k"
 version         = "0.1.0"
-description     = "A Python package"
+description     = "k-means live-coding interview: problem packet, rubric, and a stdlib ASCII scatter helper"
 readme          = "README.md"
 requires-python = ">=3.13"
 license         = { text = "MIT" }
-authors         = [{ name = "Your Name", email = "you@example.com" }]
+authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]
 dependencies    = []
 
 [project.scripts]
-my-package = "my_package:main"
+interview-k = "interview_k.show:_demo"
 
 [build-system]
 requires      = ["uv_build>=0.8,<0.9"]
@@ -17,6 +17,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "numpy>=2",        # only for the ndarray-compat self-test; the library needs none
     "pytest>=9",
     "pyright>=1.1",
 ]

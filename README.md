@@ -1,51 +1,64 @@
-# python-uvx template
+# interview-k
 
-Python project template using:
+A live-coding interview problem: implement k-means from scratch.
 
-- **mise** — toolchain management
-- **uv** — package manager + builder + publisher
-- **ruff** — linting + formatting
-- **pyright** — type checking
-- **pytest** — tests
-- **hk** — pre-commit / pre-push hooks
-- **semver** — versioning via `uv version --bump {patch,minor,major}`
+This repo holds the **candidate-facing** half — the starter stub and a plotting
+helper. The interviewer packet (reference solution, hint ladder, scoring rubric)
+is deliberately *not* here.
 
-## Quick start
+## The problem
 
-```sh
-mise install            # install python, uv, hk, ruff, pkl
-mise run sync           # uv sync
-mise run test           # pytest
-mise run lint           # hk check
-mise run typecheck      # pyright
-mise run build          # build wheel + sdist
+Implement k-means clustering from scratch. You're given `X`, an array of shape
+`(n, d)` — n points in d dimensions — and an integer `k`. Return the cluster
+label for each point and the final centroids. numpy is fine; scikit-learn and
+scipy's clustering modules are not.
 
-mise run bump-patch     # 0.1.0 -> 0.1.1
-git add pyproject.toml uv.lock
-git commit -m "release 0.1.1"
-git push                # CI tags + releases + publishes to PyPI
+```python
+def kmeans(X, k):
+    """Returns (labels, centroids) — labels (n,), centroids (k, d)."""
+    ...
 ```
 
-## CI / release flow
+Plenty is left unspecified on purpose. Ask.
 
-A single GitHub Actions pipeline (`.github/workflows/ci.yml`) handles
-everything because GHA workflows can't trigger each other from a tag push:
+## `show()` — ASCII scatter, stdlib only
 
-1. **test** job — lint, typecheck, pytest on every push/PR.
-2. **release** job — runs only on push to `main`. If the version in
-   `pyproject.toml` changed vs the previous commit, it:
-   - creates an annotated git tag `v<version>`
-   - builds wheel + sdist
-   - publishes to PyPI via OIDC trusted publishing (no token needed)
-   - creates a GitHub Release with the artifacts attached
+No numpy, no matplotlib, so it renders the same in CoderPad, Colab, a notebook,
+or a bare REPL.
 
-## PyPI trusted publishing setup
+```python
+from interview_k import show
 
-In your PyPI project settings, add a trusted publisher with:
+show(points)                  # one group -> every point is '·'
+show(*clusters)               # one mark per group, in argument order
+show(*clusters, centroids=C)  # centroids overlaid as their group's digit
+```
 
-- Owner: `northisup` (your GH org/user)
-- Repository: this repo
-- Workflow: `ci.yml`
-- Environment: `pypi`
+A group is any iterable of any iterable pair — tuples, lists, ndarray rows,
+generators. Dimensions past the first two are ignored. `width`/`height` default
+to the terminal size, and the domain is stretched to fill it on each axis
+independently: a topology view, not a scale drawing.
 
-No secrets to manage.
+Non-finite coordinates are dropped and counted rather than raised on, so a
+half-finished solution still draws something:
+
+```text
+└────────────────────────────  1 point(s) unusable
+```
+
+Run the module to see every input shape it accepts:
+
+```sh
+uv run interview-k
+```
+
+If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
+`MARKS` for the ASCII fallback noted on that line.
+
+## Development
+
+```sh
+mise install && mise run sync
+mise run test
+mise run lint
+```
