@@ -1,0 +1,52 @@
+[tools]
+python = "3.13"
+uv     = "latest"
+hk     = "latest"
+pkl    = "latest"
+ruff   = "latest"
+
+[settings]
+experimental = true
+
+[env]
+UV_PREVIEW = "1"
+
+[tasks.sync]
+description = "Sync uv environment"
+run         = "uv sync"
+
+[tasks.test]
+description = "Run tests"
+run         = "uv run pytest"
+
+[tasks.lint]
+description = "Run linters"
+run         = "hk check"
+
+[tasks.fix]
+description = "Auto-fix lint issues"
+run         = "hk fix"
+
+[tasks.typecheck]
+description = "Run pyright"
+run         = "uv run pyright"
+
+[tasks.build]
+description = "Build wheel + sdist"
+run         = "uv build"
+
+[tasks.version]
+description = "Print current version"
+run         = "uv version --short"
+
+[tasks.bump-patch]
+description = "Bump patch version"
+run         = "uv version --bump patch"
+
+[tasks.bump-minor]
+description = "Bump minor version"
+run         = "uv version --bump minor"
+
+[tasks.bump-major]
+description = "Bump major version"
+run         = "uv version --bump major"

@@ -1,0 +1,95 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          experimental: true
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pyright
+      - run: uv run pytest
+
+  release:
+    # Single-pipeline release: GitHub Actions can't trigger workflows from
+    # tags pushed by GITHUB_TOKEN, so tag + release + publish all happen
+    # in this one job after tests pass on main.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # push tag, create release
+      id-token: write   # PyPI trusted publishing (OIDC)
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: jdx/mise-action@v2
+        with:
+          experimental: true
+
+      - name: Detect version bump
+        id: version
+        run: |
+          set -euo pipefail
+          new=$(uv version --short)
+          # previous version from the parent commit's pyproject.toml
+          if old=$(git show HEAD~1:pyproject.toml 2>/dev/null | uv run --no-project python -c '
+          import sys, tomllib
+          print(tomllib.loads(sys.stdin.read())["project"]["version"])
+          '); then :; else old=""; fi
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          if [ "$old" != "$new" ] && [ -n "$new" ]; then
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            echo "tag=v$new" >> "$GITHUB_OUTPUT"
+            echo "Version bumped: $old -> $new"
+          else
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            echo "No version change ($old == $new)"
+          fi
+
+      - name: Tag release
+        if: steps.version.outputs.bumped == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "$TAG"
+          git push origin "$TAG"
+
+      - name: Build
+        if: steps.version.outputs.bumped == 'true'
+        run: uv build
+
+      - name: Publish to PyPI
+        if: steps.version.outputs.bumped == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            dist/*

@@ -1,0 +1,116 @@
+[project]
+name            = "my-package"
+version         = "0.1.0"
+description     = "A Python package"
+readme          = "README.md"
+requires-python = ">=3.13"
+license         = { text = "MIT" }
+authors         = [{ name = "Your Name", email = "you@example.com" }]
+dependencies    = []
+
+[project.scripts]
+my-package = "my_package:main"
+
+[build-system]
+requires      = ["uv_build>=0.8,<0.9"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "pyright>=1.1",
+]
+
+[tool.ruff]
+line-length    = 140
+preview        = true
+target-version = "py313"
+extend-exclude = ["**/examples/**"]
+
+lint.extend-select = [
+    "A",     # shadowing
+    "ANN",   # annotations
+    "ASYNC", # async rules
+    "B",     # bugbear common python bugs
+    "BLE",   # blind except
+    "COM",   # comma rules
+    "E",     # errors
+    "F",     # pyflakes
+    "FA",    # future annotations
+    "FURB",  # refurb rules
+    "I",     # imports + isort
+    "ISC",   # implicit string concatenation
+    "N",     # pep8-naming
+    "PLR",   # refactor rules
+    "RUF",   # ruff rules
+    "TC",    # type checking
+    "UP",    # upgrades
+    "YTT",   # modern syntax
+]
+lint.ignore = [
+    "A002",
+    "A005",
+    "COM812",  # conflicts with ruff format
+    "ISC001",  # conflicts with ruff format
+]
+lint.extend-safe-fixes = [
+    "FA",
+    "FA102",
+    "TC",
+    "UP",
+]
+lint.flake8-type-checking.runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+]
+lint.future-annotations = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "PLR2004"]
+"scripts/**" = ["T100", "ANN001", "ANN201", "EXE001", "EXE002"]
+
+[tool.pyproject-fmt]
+column_width      = 1
+indent            = 4
+keep_full_version = false
+
+[tool.pytest.ini_options]
+addopts        = ["-vv", "-ra"]
+asyncio_mode   = "auto"
+filterwarnings = [
+    "error::pytest.PytestUnknownMarkWarning",
+    "ignore::DeprecationWarning",
+    "ignore::ResourceWarning",
+]
+log_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_level  = "DEBUG"
+testpaths  = ["tests"]
+
+[tool.pyright]
+venv          = ".venv"
+venvPath      = "."
+exclude       = ["**/__pycache__", "**/.venv"]
+pythonVersion = "3.13"
+
+reportConstantRedefinition         = "error"
+reportDeprecated                   = "warning"
+reportDuplicateImport              = "error"
+reportImportCycles                 = "warning"
+reportIncompatibleMethodOverride   = "error"
+reportInconsistentConstructor      = "warning"
+reportInvalidTypeVarUse            = "error"
+reportMatchNotExhaustive           = "warning"
+reportMissingImports               = "error"
+reportMissingModuleSource          = "error"
+reportMissingTypeStubs             = false
+reportPrivateImportUsage           = "error"
+reportSelfClsParameterName         = "error"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUntypedBaseClass             = "error"
+reportUntypedClassDecorator        = "error"
+reportUntypedFunctionDecorator     = "warning"
+reportUnusedImport                 = "error"
+strictDictionaryInference          = true
+strictListInference                = true
+strictSetInference                 = true
+typeCheckingMode                   = "basic"
