@@ -5,6 +5,9 @@ TWENTY is a literal you can read at a glance and check by hand: 20 integer point
 different way, so they double as the failure-mode probes — 1000 points each except
 uniform, which is 100:
 
+Each is generated once at import and exported as a constant: BLOBS, TIGHT, and so on.
+The functions remain if you want a different seed.
+
     blobs       three well-separated clusters — the baseline that should just work
     tight       same shape on a small integer range — int centroids truncate here
     lopsided    cluster sizes 700/250/50 and unequal spread — k-means likes them even
@@ -102,6 +105,19 @@ def uniform(seed: int = 6) -> list[Point]:
     return [(r.randint(0, 100), r.randint(0, 100)) for _ in range(100)]
 
 
-# Values, not factories — DATASETS["blobs"] is the points. Built once at import;
-# 5100 stdlib-random points costs a few milliseconds.
-DATASETS: dict[str, list[Point]] = {f.__name__: f() for f in (blobs, tight, lopsided, elongated, unscaled, uniform)}
+BLOBS = blobs()
+TIGHT = tight()
+LOPSIDED = lopsided()
+ELONGATED = elongated()
+UNSCALED = unscaled()
+UNIFORM = uniform()
+
+# Derived, for tours and tests. The constants above are the normal way in.
+DATASETS: dict[str, list[Point]] = {
+    "blobs": BLOBS,
+    "tight": TIGHT,
+    "lopsided": LOPSIDED,
+    "elongated": ELONGATED,
+    "unscaled": UNSCALED,
+    "uniform": UNIFORM,
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from interview_k import Centroid, Point, show
-from interview_k.data import DATASETS, TWENTY
+from interview_k.data import DATASETS, TWENTY, UNIFORM
 
 if TYPE_CHECKING:
     import pytest
@@ -82,7 +82,7 @@ def test_datasets_are_the_documented_size() -> None:
 
 
 def test_uniform_has_no_cluster_structure() -> None:
-    points = DATASETS["uniform"]
+    points = UNIFORM
     assert all(0 <= v <= 100 for p in points for v in p)
     # evenly spread: each quadrant holds roughly a quarter of the points
     quadrants = [sum(1 for x, y in points if (x > 50) == right and (y > 50) == top) for right in (False, True) for top in (False, True)]
