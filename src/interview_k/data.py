@@ -9,6 +9,7 @@ sets each break k-means a different way, so they double as the §5 failure-mode 
     lopsided    cluster sizes 700/250/50 and unequal spread — k-means likes them even
     elongated   anisotropic clusters — k-means carves spheres, so it splits them wrong
     unscaled    y spans 1000x x — Euclidean distance sees only one feature
+    uniform     100 points, no clusters at all — k-means still returns k of them
 """
 
 from __future__ import annotations
@@ -97,4 +98,15 @@ def unscaled(seed: int = 5) -> list[Point]:
     return pts
 
 
-DATASETS = {f.__name__: f for f in (blobs, tight, lopsided, elongated, unscaled)}
+def uniform(seed: int = 6) -> list[Point]:
+    """100 points spread evenly over [0, 100]^2. There is no cluster structure here.
+
+    k-means has no way to say so: it returns k clusters, every point assigned, inertia
+    dutifully minimized. Nothing in the output distinguishes this from real structure —
+    which is the whole argument for looking at the data before trusting the answer.
+    """
+    r = random.Random(seed)
+    return [Point(r.uniform(0, 100), r.uniform(0, 100)) for _ in range(100)]
+
+
+DATASETS = {f.__name__: f for f in (blobs, tight, lopsided, elongated, unscaled, uniform)}

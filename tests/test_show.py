@@ -90,11 +90,21 @@ def test_twenty_is_hand_checkable() -> None:
     assert all(0 <= v <= 100 for p in TWENTY for v in p)
 
 
-def test_every_dataset_is_1000_points_and_deterministic() -> None:
+def test_datasets_are_the_documented_size_and_deterministic() -> None:
+    sizes = {"blobs": 1000, "tight": 1000, "lopsided": 1000, "elongated": 1000, "unscaled": 1000, "uniform": 100}
+    assert sizes.keys() == DATASETS.keys()
     for name, fn in DATASETS.items():
         pts = fn()
-        assert len(pts) == 1000, name
+        assert len(pts) == sizes[name], name
         assert fn() == pts, f"{name} is not deterministic"
+
+
+def test_uniform_has_no_cluster_structure() -> None:
+    pts = DATASETS["uniform"]()
+    assert all(0 <= p.x <= 100 and 0 <= p.y <= 100 for p in pts)
+    # evenly spread: each quadrant holds roughly a quarter of the points
+    quadrants = [sum(1 for p in pts if (p.x > 50) == qx and (p.y > 50) == qy) for qx in (False, True) for qy in (False, True)]
+    assert all(15 <= q <= 35 for q in quadrants), quadrants
 
 
 def test_datasets_have_distinct_shapes() -> None:
