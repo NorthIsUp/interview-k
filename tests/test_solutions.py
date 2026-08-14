@@ -22,7 +22,7 @@ import pytest
 
 from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
 from main import kmeans
-from solutions import CENTROIDS, INERTIA, K
+from solutions import ANSWERS, K
 
 if TYPE_CHECKING:
     from interview_k.show import Centroid, Point
@@ -103,24 +103,29 @@ def test_every_point_is_nearest_its_own_centroid(solved: Solved) -> None:
 def test_inertia_is_close_to_the_reference_optimum(solved: Solved) -> None:
     """Quality, not correctness — a local minimum is still a converged answer.
 
-    Note what this cannot do: it does not detect a missing restart loop. With k-means++
-    init a single run lands near the optimum roughly 97% of the time, so a no-restart
-    solution usually passes. Verified — a deliberately restart-free variant passed every
-    check. Ask about restarts in the interview; the harness will not raise it for you.
+    The soft version of the check below: it passes a solution that converged somewhere
+    reasonable and fails one that converged badly.
     """
     name, _, clusters = solved
-    best = INERTIA[name]
+    best = _inertia(ANSWERS[name])
     got = _inertia(clusters)
     assert got <= best * 1.25, f"{name}: inertia {got:.1f} vs reference {best:.1f} — add restarts"
 
 
-def test_finds_the_global_optimum(solved: Solved) -> None:
-    """Stricter than correctness: did they land on the best partition, not just a good one?
+def test_matches_the_reference_answer(solved: Solved) -> None:
+    """The whole expected output, compared against solutions.py.
 
-    A converged local minimum passes every test above and fails this one. That is the
-    intended reading — this is the "did the restarts work" signal, not a bug.
+    Stricter than correctness: a converged local minimum passes every test above and
+    fails this one. That is the intended reading — it is the "did the restarts work"
+    signal, not a bug. Ordering is normalised first, since it is not part of the contract.
+
+    It also cannot detect a missing restart loop on its own: with k-means++ a single run
+    lands on the optimum roughly 97% of the time. Ask about restarts in the interview.
     """
     name, _, clusters = solved
-    got = sorted((round(x, 6), round(y, 6)) for x, y in (c for c, _ in clusters))
-    want = sorted((round(x, 6), round(y, 6)) for x, y in CENTROIDS[name])
-    assert got == pytest.approx(want, abs=1e-4), f"{name}: centroids differ from the reference optimum"
+    got = sorted((tuple(round(v, 6) for v in c), sorted(pts)) for c, pts in clusters)
+    want = sorted((tuple(round(v, 6) for v in c), sorted(pts)) for c, pts in ANSWERS[name])
+
+    assert [pts for _, pts in got] == [pts for _, pts in want], f"{name}: different partition"
+    for (gc, _), (wc, _) in zip(got, want, strict=True):
+        assert gc == pytest.approx(wc, abs=1e-4), f"{name}: centroid {gc} != {wc}"

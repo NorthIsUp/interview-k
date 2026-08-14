@@ -26,7 +26,7 @@ dev = [
 line-length    = 140
 preview        = true
 target-version = "py313"
-extend-exclude = ["**/examples/**"]
+extend-exclude = ["**/examples/**", "solutions.py"]   # generated data, not source
 
 lint.extend-select = [
     "A",     # shadowing

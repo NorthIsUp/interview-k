@@ -2,9 +2,22 @@
 
 A live-coding interview problem: implement k-means from scratch.
 
-This repo holds the **candidate-facing** half — the starter stub and a plotting
-helper. The interviewer packet (reference solution, hint ladder, scoring rubric)
-is deliberately *not* here.
+> [!WARNING]
+> This repo contains the **answer key** — `docs/packet.md` (rubric, hint ladder),
+> `main.py` (worked solution), `solutions.py` and `docs/answers.md` (expected
+> output). Don't send a candidate the repo link; paste them the library and the
+> problem statement.
+
+| path | what |
+|---|---|
+| `src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
+| `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
+| `docs/answers.md` | reference answers, generated |
+| `solutions.py` | expected centroids / sizes / inertia per dataset |
+| `main.py` | reference solution |
+| `tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
+| `tools/sync_packet.py` | re-embeds library source into the packet |
+| `tests/test_solutions.py` | grades `main.py` against all seven datasets |
 
 ## The problem
 
@@ -61,4 +74,11 @@ If `●▲■◆★✚✦❖` render double-width in your terminal the grid will
 mise install && mise run sync
 mise run test
 mise run lint
+
+uv run pytest tests/test_solutions.py                 # grade main.py
+uv run python tools/answers.py > docs/answers.md      # regenerate answers
+uv run python tools/answers.py --write-solutions      # regenerate solutions.py
+uv run python tools/sync_packet.py                    # re-embed source in packet
 ```
+
+To grade a candidate, drop their file in as `main.py` and run the harness.
