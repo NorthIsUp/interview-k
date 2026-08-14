@@ -1,9 +1,8 @@
-"""Grade a solution against every dataset.
+"""Grade main.py against every dataset.
 
-    uv run pytest tests/test_solutions.py                     # grades reference/main.py
-    KMEANS_SOLUTION=/path/to/their/main.py uv run pytest tests/test_solutions.py
+    uv run pytest tests/test_solutions.py
 
-The module under test must define:
+Drop a candidate's solution in as main.py to grade theirs instead. It must define:
 
     kmeans(points: Sequence[Point], k: int) -> list[tuple[Centroid, list[Point]]]
 
@@ -16,26 +15,22 @@ about quality rather than a statement about correctness.
 
 from __future__ import annotations
 
-import importlib.util
 import math
-import os
-from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING
 
 import pytest
 
 from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
+from main import kmeans
+from solutions import CENTROIDS, INERTIA, K
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from types import ModuleType
-
     from interview_k.show import Centroid, Point
 
 Clusters = list[tuple["Centroid", list["Point"]]]
+Solved = tuple[str, list["Point"], Clusters]
 
-K = 3
-ROOT = Path(__file__).parent.parent
+
 DATASETS: dict[str, list[Point]] = {
     "TWENTY": TWENTY,
     "BLOBS": BLOBS,
@@ -47,24 +42,6 @@ DATASETS: dict[str, list[Point]] = {
 }
 
 
-class KMeans(Protocol):
-    def __call__(self, points: Sequence[Point], k: int, /) -> Clusters: ...
-
-
-def _load(name: str, path: Path) -> ModuleType:
-    spec = importlib.util.spec_from_file_location(name, path)
-    assert spec and spec.loader, path
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-_path = Path(os.environ.get("KMEANS_SOLUTION", ROOT / "reference" / "main.py"))
-if not _path.exists():
-    pytest.skip(f"no solution at {_path}", allow_module_level=True)
-kmeans = cast("KMeans", _load("solution_under_test", _path).kmeans)
-
-
 def _d2(a: tuple[float, float], b: tuple[float, float]) -> float:
     return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
 
@@ -74,12 +51,12 @@ def _inertia(clusters: Clusters) -> float:
 
 
 @pytest.fixture(scope="module", params=list(DATASETS.items()), ids=list(DATASETS))
-def solved(request: pytest.FixtureRequest) -> tuple[str, list[Point], Clusters]:
-    name, points = cast("tuple[str, list[Point]]", request.param)
+def solved(request: pytest.FixtureRequest) -> Solved:
+    name, points = request.param
     return name, points, kmeans(points, K)
 
 
-def test_returns_one_pair_per_cluster(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_returns_one_pair_per_cluster(solved: Solved) -> None:
     _, _, clusters = solved
     assert len(clusters) == K
     for centroid, points in clusters:
@@ -87,7 +64,7 @@ def test_returns_one_pair_per_cluster(solved: tuple[str, list[Point], Clusters])
         assert isinstance(points, list)
 
 
-def test_every_point_assigned_exactly_once(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_every_point_assigned_exactly_once(solved: Solved) -> None:
     """A partition: nothing dropped, nothing duplicated, nothing invented."""
     _, points, clusters = solved
     assigned = [p for _, pts in clusters for p in pts]
@@ -95,13 +72,13 @@ def test_every_point_assigned_exactly_once(solved: tuple[str, list[Point], Clust
     assert sorted(assigned) == sorted(points), "the assigned points are not the input points"
 
 
-def test_no_cluster_is_empty(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_no_cluster_is_empty(solved: Solved) -> None:
     _, _, clusters = solved
     empty = [i for i, (_, pts) in enumerate(clusters) if not pts]
     assert not empty, f"clusters {empty} are empty — an empty cluster's mean is nan"
 
 
-def test_centroid_is_the_mean_of_its_points(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_centroid_is_the_mean_of_its_points(solved: Solved) -> None:
     """Catches integer truncation: a mean stored in an int is not the mean."""
     _, _, clusters = solved
     for centroid, points in clusters:
@@ -111,7 +88,7 @@ def test_centroid_is_the_mean_of_its_points(solved: tuple[str, list[Point], Clus
         assert math.isclose(centroid[1], mean_y, abs_tol=1e-6), f"y: got {centroid[1]}, mean is {mean_y}"
 
 
-def test_every_point_is_nearest_its_own_centroid(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_every_point_is_nearest_its_own_centroid(solved: Solved) -> None:
     """The other half of convergence: no point would rather be somewhere else."""
     _, _, clusters = solved
     centroids = [c for c, _ in clusters]
@@ -123,7 +100,7 @@ def test_every_point_is_nearest_its_own_centroid(solved: tuple[str, list[Point],
             )
 
 
-def test_inertia_is_close_to_the_reference_optimum(solved: tuple[str, list[Point], Clusters]) -> None:
+def test_inertia_is_close_to_the_reference_optimum(solved: Solved) -> None:
     """Quality, not correctness — a local minimum is still a converged answer.
 
     Note what this cannot do: it does not detect a missing restart loop. With k-means++
@@ -131,8 +108,19 @@ def test_inertia_is_close_to_the_reference_optimum(solved: tuple[str, list[Point
     solution usually passes. Verified — a deliberately restart-free variant passed every
     check. Ask about restarts in the interview; the harness will not raise it for you.
     """
-    solver = _load("reference_solver", ROOT / "tools" / "answers.py")
-    name, points, clusters = solved
-    best = cast("float", solver._inertia(solver.solve(points, K)))
+    name, _, clusters = solved
+    best = INERTIA[name]
     got = _inertia(clusters)
-    assert got <= best * 1.25 + 1e-9, f"{name}: inertia {got:.1f} vs reference {best:.1f} — add restarts"
+    assert got <= best * 1.25, f"{name}: inertia {got:.1f} vs reference {best:.1f} — add restarts"
+
+
+def test_finds_the_global_optimum(solved: Solved) -> None:
+    """Stricter than correctness: did they land on the best partition, not just a good one?
+
+    A converged local minimum passes every test above and fails this one. That is the
+    intended reading — this is the "did the restarts work" signal, not a bug.
+    """
+    name, _, clusters = solved
+    got = sorted((round(x, 6), round(y, 6)) for x, y in (c for c, _ in clusters))
+    want = sorted((round(x, 6), round(y, 6)) for x, y in CENTROIDS[name])
+    assert got == pytest.approx(want, abs=1e-4), f"{name}: centroids differ from the reference optimum"

@@ -260,6 +260,7 @@ if __name__ == "__main__":
 
 
 
+
 `uv run interview-k` prints the self-tests. If `●▲■◆★✚✦❖` render double-width in your
 terminal the grid skews — swap `MARKS` for the ASCII fallback on that line.
 
@@ -437,6 +438,7 @@ DATASETS: dict[str, list[Point]] = {
     "uniform": UNIFORM,
 }
 ```
+
 
 
 

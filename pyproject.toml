@@ -77,6 +77,7 @@ keep_full_version = false
 
 [tool.pytest.ini_options]
 addopts        = ["-vv", "-ra"]
+pythonpath     = ["."]   # so tests can `from main import kmeans`
 asyncio_mode   = "auto"
 filterwarnings = [
     "error::pytest.PytestUnknownMarkWarning",
