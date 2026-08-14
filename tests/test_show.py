@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from interview_k import Centroid, Point, show
+from interview_k.data import DATASETS, TWENTY
 
 if TYPE_CHECKING:
     import pytest
@@ -79,3 +80,26 @@ def test_show_accepts_named_tuples(capsys: pytest.CaptureFixture[str]) -> None:
     show(left, right, centroids=[Centroid(0.0, 0.5), Centroid(1.0, 0.5)], width=20, height=5)
     out = capsys.readouterr().out
     assert "●" in out and "▲" in out and "0" in out
+
+
+def test_twenty_is_hand_checkable() -> None:
+    assert len(TWENTY) == 20
+    assert all(isinstance(p, Point) for p in TWENTY)
+    assert all(float(p.x).is_integer() and float(p.y).is_integer() for p in TWENTY)
+
+
+def test_every_dataset_is_1000_points_and_deterministic() -> None:
+    for name, fn in DATASETS.items():
+        pts = fn()
+        assert len(pts) == 1000, name
+        assert fn() == pts, f"{name} is not deterministic"
+
+
+def test_datasets_have_distinct_shapes() -> None:
+    spans = {}
+    for name, fn in DATASETS.items():
+        pts = fn()
+        spans[name] = (max(p.x for p in pts) - min(p.x for p in pts), max(p.y for p in pts) - min(p.y for p in pts))
+    assert spans["unscaled"][1] / spans["unscaled"][0] > 100  # y dwarfs x
+    assert spans["tight"][0] < 10  # small integer range
+    assert spans["elongated"][0] > spans["elongated"][1]  # wider than tall

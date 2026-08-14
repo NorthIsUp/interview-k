@@ -1,0 +1,99 @@
+"""Datasets for the k-means interview. Stdlib only, deterministic.
+
+TWENTY is a literal you can read at a glance and check by hand. The five 1000-point
+sets each break k-means a different way, so they double as the §5 failure-mode probes:
+
+    blobs       three well-separated clusters — the baseline that should just work
+    tight       same shape on a small integer range — int centroids truncate here
+    lopsided    cluster sizes 700/250/50 and unequal spread — k-means likes them even
+    elongated   anisotropic clusters — k-means carves spheres, so it splits them wrong
+    unscaled    y spans 1000x x — Euclidean distance sees only one feature
+"""
+
+from __future__ import annotations
+
+import random
+
+from interview_k.show import Point
+
+TWENTY: list[Point] = [
+    Point(1, 2),
+    Point(2, 1),
+    Point(2, 3),
+    Point(3, 2),
+    Point(1, 1),
+    Point(2, 2),
+    Point(3, 1),
+    Point(11, 12),
+    Point(12, 11),
+    Point(12, 13),
+    Point(13, 12),
+    Point(11, 11),
+    Point(12, 12),
+    Point(13, 13),
+    Point(2, 12),
+    Point(1, 11),
+    Point(3, 13),
+    Point(2, 11),
+    Point(1, 13),
+    Point(3, 12),
+]
+
+
+def _blob(rng: random.Random, center: Point, n: int, spread: Point) -> list[Point]:
+    return [Point(center.x + rng.gauss(0, spread.x), center.y + rng.gauss(0, spread.y)) for _ in range(n)]
+
+
+def blobs(seed: int = 1) -> list[Point]:
+    """Three well-separated round clusters. The baseline."""
+    r = random.Random(seed)
+    pts = _blob(r, Point(20, 20), 334, Point(4, 4)) + _blob(r, Point(80, 30), 333, Point(4, 4)) + _blob(r, Point(50, 80), 333, Point(4, 4))
+    r.shuffle(pts)
+    return pts
+
+
+def tight(seed: int = 2) -> list[Point]:
+    """Same shape, small integer range. Integer centroids quantize and it breaks."""
+    r = random.Random(seed)
+    pts = (
+        _blob(r, Point(0, 0), 334, Point(0.6, 0.6))
+        + _blob(r, Point(3, 3), 333, Point(0.6, 0.6))
+        + _blob(r, Point(0, 3), 333, Point(0.6, 0.6))
+    )
+    r.shuffle(pts)
+    return [Point(round(p.x), round(p.y)) for p in pts]
+
+
+def lopsided(seed: int = 3) -> list[Point]:
+    """700/250/50 with unequal spread. k-means pulls boundaries toward the big one."""
+    r = random.Random(seed)
+    pts = (
+        _blob(r, Point(20, 20), 700, Point(6, 6)) + _blob(r, Point(60, 60), 250, Point(3, 3)) + _blob(r, Point(20, 70), 50, Point(1.5, 1.5))
+    )
+    r.shuffle(pts)
+    return pts
+
+
+def elongated(seed: int = 4) -> list[Point]:
+    """Anisotropic clusters. k-means fits spheres, so it cuts these the wrong way."""
+    r = random.Random(seed)
+    pts = (
+        _blob(r, Point(30, 20), 334, Point(25, 2)) + _blob(r, Point(30, 40), 333, Point(25, 2)) + _blob(r, Point(30, 60), 333, Point(25, 2))
+    )
+    r.shuffle(pts)
+    return pts
+
+
+def unscaled(seed: int = 5) -> list[Point]:
+    """y spans ~1000x x. Euclidean distance sees only y until you standardize."""
+    r = random.Random(seed)
+    pts = (
+        _blob(r, Point(2, 5000), 334, Point(0.5, 900))
+        + _blob(r, Point(5, 5000), 333, Point(0.5, 900))
+        + _blob(r, Point(8, 5000), 333, Point(0.5, 900))
+    )
+    r.shuffle(pts)
+    return pts
+
+
+DATASETS = {f.__name__: f for f in (blobs, tight, lopsided, elongated, unscaled)}
