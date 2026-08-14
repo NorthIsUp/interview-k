@@ -37,9 +37,8 @@ class Point(NamedTuple):
     y: float
 
 
-# ponytail: an alias, not a second class. NamedTuples compare by value, so a distinct
-# Centroid class would still equal an identical Point at runtime — it buys a type-checker
-# hint and nothing else. Upgrade to a real class if you ever need them non-interchangeable.
+# An alias, not a subclass: NamedTuples compare by value, so a distinct Centroid class
+# would still equal an identical Point at runtime.
 Centroid = Point
 
 MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
@@ -58,9 +57,8 @@ def _xy(points: Iterable[Point]) -> tuple[list[Point], int]:
     return pts, dropped
 
 
-# ponytail: 23 locals is honest for a plotting routine — splitting it into helpers
-# would trade one readable pass over the data for indirection. Ceiling: if this grows
-# a third axis or styling, extract a Grid class.
+# Locals are over the limit because this is one readable pass over the data; splitting it
+# into helpers would buy indirection, not clarity.
 def show(  # ruff: ignore[too-many-locals]
     *groups: Iterable[Point],
     centroids: Iterable[Point] | None = None,
