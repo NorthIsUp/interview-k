@@ -8,7 +8,7 @@ from interview_k.data import DATASETS, TWENTY
 if TYPE_CHECKING:
     import pytest
 
-SQUARE = [(0, 0), (0, 1), (1, 0), (1, 1)]
+SQUARE = [Point(0, 0), Point(0, 1), Point(1, 0), Point(1, 1)]
 
 
 def test_single_group_is_unlabeled(capsys: pytest.CaptureFixture[str]) -> None:
@@ -26,12 +26,12 @@ def test_groups_get_distinct_marks(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_centroids_render_as_digits(capsys: pytest.CaptureFixture[str]) -> None:
-    show(SQUARE[:2], SQUARE[2:], centroids=[(0, 0.5), (1, 0.5)], width=20, height=5)
+    show(SQUARE[:2], SQUARE[2:], centroids=[Point(0, 0.5), Point(1, 0.5)], width=20, height=5)
     assert "0" in capsys.readouterr().out
 
 
 def test_non_finite_is_counted_not_raised(capsys: pytest.CaptureFixture[str]) -> None:
-    show([*SQUARE, (float("nan"), 0.0)], width=20, height=5)
+    show([*SQUARE, Point(float("nan"), 0.0)], width=20, height=5)
     assert "1 point(s) unusable" in capsys.readouterr().out
 
 
@@ -53,7 +53,7 @@ def test_explicit_size_is_honored(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_degenerate_all_points_identical(capsys: pytest.CaptureFixture[str]) -> None:
-    show([(2.0, 2.0)] * 5, width=20, height=5)  # zero span must not divide by zero
+    show([Point(2.0, 2.0)] * 5, width=20, height=5)  # zero span must not divide by zero
     assert "·" in capsys.readouterr().out
 
 
