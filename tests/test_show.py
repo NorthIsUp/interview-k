@@ -84,8 +84,10 @@ def test_show_accepts_named_tuples(capsys: pytest.CaptureFixture[str]) -> None:
 
 def test_twenty_is_hand_checkable() -> None:
     assert len(TWENTY) == 20
+    assert len(set(TWENTY)) == 20, "duplicates make hand-checking ambiguous"
     assert all(isinstance(p, Point) for p in TWENTY)
     assert all(float(p.x).is_integer() and float(p.y).is_integer() for p in TWENTY)
+    assert all(0 <= v <= 100 for p in TWENTY for v in p)
 
 
 def test_every_dataset_is_1000_points_and_deterministic() -> None:

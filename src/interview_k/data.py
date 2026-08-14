@@ -1,6 +1,7 @@
 """Datasets for the k-means interview. Stdlib only, deterministic.
 
-TWENTY is a literal you can read at a glance and check by hand. The five 1000-point
+TWENTY is a literal you can read at a glance and check by hand: 20 integer points
+in [0, 100], three obvious clusters of 7/6/7. The five 1000-point
 sets each break k-means a different way, so they double as the §5 failure-mode probes:
 
     blobs       three well-separated clusters — the baseline that should just work
@@ -17,26 +18,26 @@ import random
 from interview_k.show import Point
 
 TWENTY: list[Point] = [
-    Point(1, 2),
-    Point(2, 1),
-    Point(2, 3),
-    Point(3, 2),
-    Point(1, 1),
-    Point(2, 2),
-    Point(3, 1),
-    Point(11, 12),
-    Point(12, 11),
-    Point(12, 13),
-    Point(13, 12),
-    Point(11, 11),
-    Point(12, 12),
-    Point(13, 13),
-    Point(2, 12),
-    Point(1, 11),
-    Point(3, 13),
-    Point(2, 11),
-    Point(1, 13),
-    Point(3, 12),
+    Point(10, 15),
+    Point(14, 20),
+    Point(9, 22),
+    Point(15, 14),
+    Point(11, 19),
+    Point(16, 21),
+    Point(8, 17),
+    Point(80, 28),
+    Point(85, 33),
+    Point(78, 31),
+    Point(84, 26),
+    Point(88, 30),
+    Point(81, 35),
+    Point(45, 75),
+    Point(50, 80),
+    Point(47, 82),
+    Point(52, 76),
+    Point(44, 79),
+    Point(51, 83),
+    Point(48, 77),
 ]
 
 
