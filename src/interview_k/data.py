@@ -1,8 +1,9 @@
 """Datasets for the k-means interview. Stdlib only, deterministic.
 
-TWENTY is a literal you can read at a glance and check by hand: 20 integer points
-in [0, 100], three obvious clusters of 7/6/7. The five 1000-point
-sets each break k-means a different way, so they double as the §5 failure-mode probes:
+TWENTY is a literal you can read at a glance and check by hand: 20 integer points in
+[0, 100], three obvious clusters of 7/6/7. The generated sets each break k-means a
+different way, so they double as the failure-mode probes — 1000 points each except
+uniform, which is 100:
 
     blobs       three well-separated clusters — the baseline that should just work
     tight       same shape on a small integer range — int centroids truncate here
