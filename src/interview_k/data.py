@@ -1,4 +1,4 @@
-"""Datasets for the k-means interview. Stdlib only, deterministic.
+"""Datasets for the k-means interview. Stdlib only, deterministic, integer coordinates throughout.
 
 TWENTY is a literal you can read at a glance and check by hand: 20 integer points in
 [0, 100], three obvious clusters of 7/6/7. The generated sets each break k-means a
@@ -19,7 +19,7 @@ import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from interview_k.show import Point
+    from interview_k.show import Centroid, Point
 
 TWENTY: list[Point] = [
     (10, 15),
@@ -45,10 +45,10 @@ TWENTY: list[Point] = [
 ]
 
 
-def _blob(rng: random.Random, center: Point, n: int, spread: Point) -> list[Point]:
+def _blob(rng: random.Random, center: Centroid, n: int, spread: tuple[float, float]) -> list[Point]:
     cx, cy = center
     sx, sy = spread
-    return [(cx + rng.gauss(0, sx), cy + rng.gauss(0, sy)) for _ in range(n)]
+    return [(round(cx + rng.gauss(0, sx)), round(cy + rng.gauss(0, sy))) for _ in range(n)]
 
 
 def blobs(seed: int = 1) -> list[Point]:
@@ -64,7 +64,7 @@ def tight(seed: int = 2) -> list[Point]:
     r = random.Random(seed)
     pts = _blob(r, (0, 0), 334, (0.6, 0.6)) + _blob(r, (3, 3), 333, (0.6, 0.6)) + _blob(r, (0, 3), 333, (0.6, 0.6))
     r.shuffle(pts)
-    return [(round(x), round(y)) for x, y in pts]
+    return pts
 
 
 def lopsided(seed: int = 3) -> list[Point]:
@@ -99,7 +99,7 @@ def uniform(seed: int = 6) -> list[Point]:
     which is the whole argument for looking at the data before trusting the answer.
     """
     r = random.Random(seed)
-    return [(r.uniform(0, 100), r.uniform(0, 100)) for _ in range(100)]
+    return [(r.randint(0, 100), r.randint(0, 100)) for _ in range(100)]
 
 
 # Values, not factories — DATASETS["blobs"] is the points. Built once at import;

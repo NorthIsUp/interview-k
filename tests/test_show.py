@@ -11,11 +11,12 @@ if TYPE_CHECKING:
 SQUARE: list[Point] = [(0, 0), (0, 1), (1, 0), (1, 1)]
 
 
-def test_point_is_a_plain_tuple() -> None:
-    p: Point = (1.5, -2.0)
-    x, y = p
-    assert (x, y) == (1.5, -2.0)
-    assert Centroid is Point
+def test_point_and_centroid_are_plain_tuples() -> None:
+    p: Point = (1, -2)  # data points are integral
+    c: Centroid = (1.5, -2.5)  # a centroid is a mean
+    assert (p, c) == ((1, -2), (1.5, -2.5))
+    accepts_centroid: Centroid = p  # a Point flows into a Centroid, not the reverse
+    assert accepts_centroid == p
 
 
 def test_single_group_is_unlabeled(capsys: pytest.CaptureFixture[str]) -> None:
@@ -38,8 +39,9 @@ def test_centroids_render_as_digits(capsys: pytest.CaptureFixture[str]) -> None:
     assert "0" in capsys.readouterr().out
 
 
-def test_non_finite_is_counted_not_raised(capsys: pytest.CaptureFixture[str]) -> None:
-    show([*SQUARE, (float("nan"), 0.0)], width=20, height=5)
+def test_non_finite_centroid_is_counted_not_raised(capsys: pytest.CaptureFixture[str]) -> None:
+    # only a centroid can be nan — it is a mean, and mean() of an empty cluster is nan
+    show(SQUARE, centroids=[(float("nan"), 0.0)], width=20, height=5)
     assert "1 point(s) unusable" in capsys.readouterr().out
 
 
@@ -61,7 +63,7 @@ def test_explicit_size_is_honored(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_degenerate_all_points_identical(capsys: pytest.CaptureFixture[str]) -> None:
-    show([(2.0, 2.0)] * 5, width=20, height=5)  # zero span must not divide by zero
+    show([(2, 2)] * 5, width=20, height=5)  # zero span must not divide by zero
     assert "·" in capsys.readouterr().out
 
 

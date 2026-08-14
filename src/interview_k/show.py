@@ -32,18 +32,19 @@ UNLABELED = "·"
 BLANK = " "
 
 
-# A plain tuple, so any (x, y) works — no constructor to import, nothing to convert.
-# `float` also admits `int` by the numeric tower: integer coordinates (pixels, counts)
-# are ordinary input. Centroids are what must stay float, since a mean rarely is one.
-Point = tuple[float, float]
-Centroid = Point
+# Plain tuples — no constructor to import, nothing to convert. The int/float split is
+# the domain: data points are integral (pixels, counts, ages), a centroid is a mean and
+# rarely is. By the numeric tower a Point is accepted wherever a Centroid is expected,
+# but not the reverse — so a mean can never be mistaken for a data point.
+Point = tuple[int, int]
+Centroid = tuple[float, float]
 
 Cell = tuple[int, int]  # (row, col) into the character grid
 
 
-def _finite(points: Iterable[Point]) -> tuple[list[Point], int]:
+def _finite(points: Iterable[Centroid]) -> tuple[list[Centroid], int]:
     """Split points into the plottable ones and a count of the rest."""
-    usable: list[Point] = []
+    usable: list[Centroid] = []
     dropped = 0
     for x, y in points:
         if isfinite(x) and isfinite(y):
@@ -62,13 +63,13 @@ def _terminal_box(width: int, height: int) -> tuple[int, int]:
     )
 
 
-def _projection(points: list[Point], width: int, height: int) -> Callable[[Point], Cell]:
+def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Centroid], Cell]:
     """Map data coordinates onto grid cells, stretching each axis to fill the box."""
     x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
     y0, y1 = min(y for _, y in points), max(y for _, y in points)
     span_x, span_y = (x1 - x0) or 1.0, (y1 - y0) or 1.0
 
-    def cell(point: Point) -> Cell:
+    def cell(point: Centroid) -> Cell:
         x, y = point
         col = round((x - x0) / span_x * (width - 1))
         row = round((y1 - y) / span_y * (height - 1))  # flip y: row 0 is the top
@@ -79,7 +80,7 @@ def _projection(points: list[Point], width: int, height: int) -> Callable[[Point
 
 def show(
     *groups: Iterable[Point],
-    centroids: Iterable[Point] | None = None,
+    centroids: Iterable[Centroid] | None = None,
     height: int = 0,
     width: int = 0,
     title: str = "",
@@ -120,12 +121,12 @@ def show(
 
 def _demo() -> None:
     """Self-test: the input shapes show() accepts. Entry point for `interview-k`."""
-    quad: list[Point] = [(x / 4, (x / 4) ** 2 / 4 - 2) for x in range(-20, 21)]
+    quad: list[Point] = [(x, x * x // 8 - 40) for x in range(-20, 21)]
     left = [p for p in quad if p[0] < 0]
     right = [p for p in quad if p[0] >= 0]
 
     show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(left, right, centroids=[(-2.5, 0.0), (2.5, 0.0)], width=44, height=8, title="two groups + centroids")
+    show(left, right, centroids=[(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
     show((p for p in left), (p for p in right), width=44, height=8, title="generators — safe, show() is single-pass")
     show(quad, centroids=[(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
     show(width=44)
@@ -136,10 +137,10 @@ def _demo() -> None:
         print("(numpy absent — stdlib path fine)")
     else:
         rng = np.random.default_rng(1)
-        arr = rng.normal(0, 1, (80, 2))
-        pts: list[Point] = [(float(x), float(y)) for x, y in arr]  # ndarray rows -> Point
+        arr = rng.normal(0, 20, (80, 2))
+        pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
         mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
-        show(*mid, centroids=[(-1.0, 0.0), (1.0, 0.0)], width=44, title="from an ndarray")
+        show(*mid, centroids=[(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
 
 
 if __name__ == "__main__":
