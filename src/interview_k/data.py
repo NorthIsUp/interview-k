@@ -16,41 +16,45 @@ uniform, which is 100:
 from __future__ import annotations
 
 import random
+from typing import TYPE_CHECKING
 
-from interview_k.show import Point
+if TYPE_CHECKING:
+    from interview_k.show import Point
 
 TWENTY: list[Point] = [
-    Point(10, 15),
-    Point(14, 20),
-    Point(9, 22),
-    Point(15, 14),
-    Point(11, 19),
-    Point(16, 21),
-    Point(8, 17),
-    Point(80, 28),
-    Point(85, 33),
-    Point(78, 31),
-    Point(84, 26),
-    Point(88, 30),
-    Point(81, 35),
-    Point(45, 75),
-    Point(50, 80),
-    Point(47, 82),
-    Point(52, 76),
-    Point(44, 79),
-    Point(51, 83),
-    Point(48, 77),
+    (10, 15),
+    (14, 20),
+    (9, 22),
+    (15, 14),
+    (11, 19),
+    (16, 21),
+    (8, 17),
+    (80, 28),
+    (85, 33),
+    (78, 31),
+    (84, 26),
+    (88, 30),
+    (81, 35),
+    (45, 75),
+    (50, 80),
+    (47, 82),
+    (52, 76),
+    (44, 79),
+    (51, 83),
+    (48, 77),
 ]
 
 
 def _blob(rng: random.Random, center: Point, n: int, spread: Point) -> list[Point]:
-    return [Point(center.x + rng.gauss(0, spread.x), center.y + rng.gauss(0, spread.y)) for _ in range(n)]
+    cx, cy = center
+    sx, sy = spread
+    return [(cx + rng.gauss(0, sx), cy + rng.gauss(0, sy)) for _ in range(n)]
 
 
 def blobs(seed: int = 1) -> list[Point]:
     """Three well-separated round clusters. The baseline."""
     r = random.Random(seed)
-    pts = _blob(r, Point(20, 20), 334, Point(4, 4)) + _blob(r, Point(80, 30), 333, Point(4, 4)) + _blob(r, Point(50, 80), 333, Point(4, 4))
+    pts = _blob(r, (20, 20), 334, (4, 4)) + _blob(r, (80, 30), 333, (4, 4)) + _blob(r, (50, 80), 333, (4, 4))
     r.shuffle(pts)
     return pts
 
@@ -58,21 +62,15 @@ def blobs(seed: int = 1) -> list[Point]:
 def tight(seed: int = 2) -> list[Point]:
     """Same shape, small integer range. Integer centroids quantize and it breaks."""
     r = random.Random(seed)
-    pts = (
-        _blob(r, Point(0, 0), 334, Point(0.6, 0.6))
-        + _blob(r, Point(3, 3), 333, Point(0.6, 0.6))
-        + _blob(r, Point(0, 3), 333, Point(0.6, 0.6))
-    )
+    pts = _blob(r, (0, 0), 334, (0.6, 0.6)) + _blob(r, (3, 3), 333, (0.6, 0.6)) + _blob(r, (0, 3), 333, (0.6, 0.6))
     r.shuffle(pts)
-    return [Point(round(p.x), round(p.y)) for p in pts]
+    return [(round(x), round(y)) for x, y in pts]
 
 
 def lopsided(seed: int = 3) -> list[Point]:
     """700/250/50 with unequal spread. k-means pulls boundaries toward the big one."""
     r = random.Random(seed)
-    pts = (
-        _blob(r, Point(20, 20), 700, Point(6, 6)) + _blob(r, Point(60, 60), 250, Point(3, 3)) + _blob(r, Point(20, 70), 50, Point(1.5, 1.5))
-    )
+    pts = _blob(r, (20, 20), 700, (6, 6)) + _blob(r, (60, 60), 250, (3, 3)) + _blob(r, (20, 70), 50, (1.5, 1.5))
     r.shuffle(pts)
     return pts
 
@@ -80,9 +78,7 @@ def lopsided(seed: int = 3) -> list[Point]:
 def elongated(seed: int = 4) -> list[Point]:
     """Anisotropic clusters. k-means fits spheres, so it cuts these the wrong way."""
     r = random.Random(seed)
-    pts = (
-        _blob(r, Point(30, 20), 334, Point(25, 2)) + _blob(r, Point(30, 40), 333, Point(25, 2)) + _blob(r, Point(30, 60), 333, Point(25, 2))
-    )
+    pts = _blob(r, (30, 20), 334, (25, 2)) + _blob(r, (30, 40), 333, (25, 2)) + _blob(r, (30, 60), 333, (25, 2))
     r.shuffle(pts)
     return pts
 
@@ -90,11 +86,7 @@ def elongated(seed: int = 4) -> list[Point]:
 def unscaled(seed: int = 5) -> list[Point]:
     """y spans ~1000x x. Euclidean distance sees only y until you standardize."""
     r = random.Random(seed)
-    pts = (
-        _blob(r, Point(2, 5000), 334, Point(0.5, 900))
-        + _blob(r, Point(5, 5000), 333, Point(0.5, 900))
-        + _blob(r, Point(8, 5000), 333, Point(0.5, 900))
-    )
+    pts = _blob(r, (2, 5000), 334, (0.5, 900)) + _blob(r, (5, 5000), 333, (0.5, 900)) + _blob(r, (8, 5000), 333, (0.5, 900))
     r.shuffle(pts)
     return pts
 
@@ -107,7 +99,9 @@ def uniform(seed: int = 6) -> list[Point]:
     which is the whole argument for looking at the data before trusting the answer.
     """
     r = random.Random(seed)
-    return [Point(r.uniform(0, 100), r.uniform(0, 100)) for _ in range(100)]
+    return [(r.uniform(0, 100), r.uniform(0, 100)) for _ in range(100)]
 
 
-DATASETS = {f.__name__: f for f in (blobs, tight, lopsided, elongated, unscaled, uniform)}
+# Values, not factories — DATASETS["blobs"] is the points. Built once at import;
+# 5100 stdlib-random points costs a few milliseconds.
+DATASETS: dict[str, list[Point]] = {f.__name__: f() for f in (blobs, tight, lopsided, elongated, unscaled, uniform)}
