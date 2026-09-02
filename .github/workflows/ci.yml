@@ -37,10 +37,17 @@ jobs:
         working-directory: ts
 
       # The TS datasets are only a port while they still match Python's, so regenerate
-      # the fixture from Python and fail if it moved.
-      - run: uv run python tools/ts_fixture.py
+      # the fixture from Python and fail if it moved. `-m` so py/ is on the path and
+      # `solutions` imports; running it by path puts py/tools/ there instead.
+      - run: uv run python -m tools.ts_fixture
         working-directory: py
       - run: git diff --exit-code ts/test/parity.json
+
+      # A pad compiles TypeScript as CommonJS under ts-node, which the checks above never
+      # exercise — every pad bug so far was invisible until this ran. Needs ts/node_modules
+      # for tsc, so it goes after `npm ci`.
+      - run: uv run python -m tools.coderpad_check
+        working-directory: py
 
   release:
     # Single-pipeline release: GitHub Actions can't trigger workflows from
