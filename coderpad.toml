@@ -1,0 +1,14 @@
+# Which question in the CoderPad bank each of ours is.
+#
+# Maintained by `mise run coderpad:sync --push`; edit it only to adopt a question you made by
+# hand. There is no server-side "find my question by title" — questionsSearch is the practice
+# library and cannot see your own bank — so the id has to be written down somewhere, and a
+# question with no entry here is created rather than updated.
+#
+# The ids change when a project's *files* change: CoderPad only accepts those when a question
+# is created, so a new tree means a new question. Everything else — title, description,
+# instructions, solution — updates in place and keeps the id.
+
+[questions]
+"k-means [py]" = 385885
+"k-means [ts]" = 385886

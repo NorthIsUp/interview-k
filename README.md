@@ -17,6 +17,7 @@ language documents its own half:
 | path | what |
 |---|---|
 | `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
+| `coderpad.toml` | which question in the bank is ours; maintained by `coderpad:sync` |
 | `py/src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
 | `ts/src/` | `show.ts`, `data.ts` — the same two modules, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |

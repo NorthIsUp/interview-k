@@ -14,11 +14,21 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
 
-from tools.coderpad import QUESTIONS, python_project, read_cookie_header, shipped, strip_ts_extension, typescript_project
+from tools import coderpad
+from tools.coderpad import (
+    QUESTIONS,
+    python_project,
+    question_ids,
+    read_cookie_header,
+    shipped,
+    strip_ts_extension,
+    typescript_project,
+)
 
 RESTORE_TS = re.compile(r'(from\s+"\./[^"]+)(")')
 
@@ -138,6 +148,27 @@ def test_instructions_leave_the_interviewer_half_behind() -> None:
         assert "To grade a candidate" not in text
         assert "--write-solutions" not in text
         assert "answers.md" not in text
+
+
+def test_every_question_has_an_id_on_file() -> None:
+    """A question with no entry is created rather than updated, so a missing one is a duplicate."""
+    ids = question_ids()
+    for question in QUESTIONS:
+        assert question.title in ids, f"{question.title} has no id in coderpad.toml — a push would make a second copy"
+        assert question.question_id == ids[question.title]
+
+
+def test_the_id_store_round_trips(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """It is rewritten whole on every create, so parsing back what it wrote is the whole contract."""
+    store = tmp_path / "coderpad.toml"
+    monkeypatch.setattr(coderpad, "IDS", store)
+
+    coderpad.remember_id("k-means [py]", 1)
+    coderpad.remember_id("k-means [ts]", 2)
+    coderpad.remember_id("k-means [py]", 3)  # a recreate replaces, never appends
+
+    assert coderpad.question_ids() == {"k-means [py]": 3, "k-means [ts]": 2}
+    assert tomllib.loads(store.read_text())["questions"] == {"k-means [py]": 3, "k-means [ts]": 2}
 
 
 def test_questions_are_the_two_the_interview_ships() -> None:

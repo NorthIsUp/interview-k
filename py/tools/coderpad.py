@@ -13,7 +13,8 @@ base64 — `[{"path": b64("src/main.py"), "contents": "..."}]` — and not the `
 map it reads back as in some views; sending the map is accepted and then produces a question
 whose preview and pads both 500, which is a long way to find a typo. It is also create-only:
 QuestionUpdateAttributes has no `fileContents`, so changing the tree means replacing the
-question, and --recreate says so out loud because that costs the question its id.
+question. --recreate does that and writes the new id to coderpad.toml, which is where the
+mapping from our titles to the bank's ids lives — there is no server-side lookup by title.
 
 --push drives the same GraphQL endpoint the dashboard uses, authenticated as you by your
 browser session rather than by an API key — CoderPad gates REST API keys behind Enterprise,
@@ -30,6 +31,7 @@ import os
 import re
 import shutil
 import sys
+import tomllib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -216,23 +218,52 @@ def _for_the_candidate(readme: Path) -> str:
 # ── the questions ────────────────────────────────────────────────────────────
 
 
+IDS = PY.parent / "coderpad.toml"
+
+IDS_HEADER = """# Which question in the CoderPad bank each of ours is.
+#
+# Maintained by `mise run coderpad:sync --push`; edit it only to adopt a question you made by
+# hand. There is no server-side "find my question by title" — questionsSearch is the practice
+# library and cannot see your own bank — so the id has to be written down somewhere, and a
+# question with no entry here is created rather than updated.
+#
+# The ids change when a project's *files* change: CoderPad only accepts those when a question
+# is created, so a new tree means a new question. Everything else — title, description,
+# instructions, solution — updates in place and keeps the id.
+
+[questions]
+"""
+
+
+def question_ids() -> dict[str, int]:
+    if not IDS.exists():
+        return {}
+    return {title: int(value) for title, value in tomllib.loads(IDS.read_text()).get("questions", {}).items()}
+
+
+def remember_id(title: str, question_id: int) -> None:
+    """Rewrite the whole file: it is a dozen lines, and a generated file with no hand-edits to
+    preserve is simpler to regenerate than to patch.
+    """
+    ids = question_ids() | {title: question_id}
+    body = "".join(f'"{name}" = {ids[name]}\n' for name in sorted(ids))
+    IDS.write_text(IDS_HEADER + body)
+
+
 @dataclass(frozen=True)
 class Question:
-    """One question's worth of the interview, and where each part of it comes from.
-
-    `question_id` is the question --push owns, so re-running edits it rather than adding
-    another copy. There is no server-side "find my question by title" — questionsSearch is the
-    practice library and cannot see your own bank — so the id is pinned here instead. One
-    constant in git beats a state file. None means "not pushed yet": the tool creates one and
-    prints the id to paste in.
-    """
+    """One question's worth of the interview, and where each part of it comes from."""
 
     title: str
     project_template: int
-    question_id: int | None
     solution: Path
     project: Callable[[], dict[str, str]]
     readme: Path
+
+    @property
+    def question_id(self) -> int | None:
+        """The question in the bank this one owns, or None if it has never been pushed."""
+        return question_ids().get(self.title)
 
     @property
     def build_root(self) -> Path:
@@ -262,7 +293,6 @@ QUESTIONS = (
     Question(
         title="k-means [py]",
         project_template=PYTHON_PROJECT,
-        question_id=385885,
         solution=PY / "main.py",
         project=python_project,
         readme=PY / "README.md",
@@ -270,7 +300,6 @@ QUESTIONS = (
     Question(
         title="k-means [ts]",
         project_template=TYPESCRIPT_PROJECT,
-        question_id=385886,
         solution=TS / "main.ts",
         project=typescript_project,
         readme=TS / "README.md",
@@ -388,7 +417,7 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
     if question.question_id is not None:
         existing = _graphql(LOOKUP, {"id": question.question_id}, cookies, csrf)["question"]
         if existing is None:
-            raise SystemExit(f"question {question.question_id} is gone from the bank — clear its question_id to create it again")
+            raise SystemExit(f"question {question.question_id} is gone from the bank — drop its line from {IDS.name} to create it again")
 
     project = question.project()
     fields: dict[str, Any] = {
@@ -422,7 +451,8 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
 
     print(f"{verb} {question.title} — {pushed['id']} — {APP}/dashboard/questions/edit/{pushed['id']}")
     if existing is None or recreate:
-        print(f"  set question_id={pushed['id']} on the {question.title} entry in {Path(__file__).name}")
+        remember_id(question.title, int(pushed["id"]))
+        print(f"  wrote id {pushed['id']} to {IDS.name}")
     elif _stored_project(existing) != project:
         print(f"  {FILES_ARE_CREATE_ONLY}")
 
