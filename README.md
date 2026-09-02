@@ -22,7 +22,7 @@ Python in `py/`, TypeScript in `ts/`, interview material in `docs/`.
 | `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
 | `py/tools/sync_packet.py` | re-embeds library source into the packet |
 | `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (datasets, renders, answer key) |
-| `py/tools/coderpad.py` | builds both pad bundles; `--push` syncs them to CoderPad |
+| `py/tools/coderpad.py` | builds both CoderPad projects; `--push` syncs them to the question bank |
 | `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
 | `ts/test/solutions.test.ts` | holds `main.ts` to the same answers |
 
@@ -114,7 +114,9 @@ mise install && mise run sync
 mise run test          # pytest + node --test
 mise run typecheck     # pyright + tsc
 mise run lint
-mise run coderpad:sync --push   # push "k-means [py]" and "k-means [ts]" to the question bank
+mise run coderpad:sync --push   # sync "k-means [py]" and "k-means [ts]" to the question bank
+                                # add --recreate to change a project's files: CoderPad only
+                                # takes them at creation, so the questions get new ids
 
 cd py
 uv run pytest tests/test_solutions.py                 # grade main.py

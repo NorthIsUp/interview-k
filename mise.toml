@@ -99,7 +99,10 @@ dir         = "py"
 run         = "uv version --bump major"
 
 [tasks."coderpad:sync"]
-description = "Assemble the candidate bundle for CoderPad (--push uploads it, needs ~/.config/coderpad/cookie)"
+description = "Build the CoderPad projects for both languages (--push uploads them, needs ~/.config/coderpad/cookie)"
 dir         = "py"
-usage       = 'flag "--push" help="Also upload the bundle to your CoderPad question bank"'
-run         = 'uv run python tools/coderpad.py ${usage_push:+--push}'
+usage       = '''
+flag "--push" help="Also upload both projects to your CoderPad question bank"
+flag "--recreate" help="Replace the questions instead of updating them — the only way to change a project's files, and it changes their ids"
+'''
+run         = 'uv run python tools/coderpad.py ${usage_push:+--push} ${usage_recreate:+--recreate}'
