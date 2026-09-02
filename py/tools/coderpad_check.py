@@ -11,10 +11,10 @@ pad and nothing else. So the compile below is spelled out the way ts-node spells
 than deferred to ts/tsconfig.json, which would agree with the code and still be wrong.
 
 Each project is checked three ways: every file compiles, the `.cpad` run target exits 0 with
-something on stdout (the Run button is the first thing a candidate presses), and a project
-shipping a tests/ directory runs it through the `.cpad` test target. Neither project ships
-tests today — that arm says so rather than passing silently, and starts working the day one
-appears. Nothing here talks to CoderPad.
+something on stdout (the Run button is the first thing a candidate presses), and nothing of
+ours leaked into it. The tests grade the candidate, so they are never in the pad — anything
+the interviewer keeps beside a project is underscore-prefixed and dropped on the way out.
+Nothing here talks to CoderPad.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from tools.coderpad import QUESTIONS, TS, python_project, typescript_project
+from tools.coderpad import PRIVATE, QUESTIONS, TS, python_project, typescript_project
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -48,8 +48,6 @@ NPM_RUN = "npm run "
 PYTHONS = frozenset({"python", "python3"})
 # ts-node is the pad's; it does not install on a current node. node runs the same file.
 TS_RUNNERS = frozenset({"ts-node", "tsx", "node"})
-
-TESTS = "tests/"
 
 
 def _lay_out(project: dict[str, str], root: Path) -> Path:
@@ -112,17 +110,12 @@ def _check_targets(project: dict[str, str], root: Path, argv: Callable[[dict[str
         raise SystemExit(f"`{' '.join(run)}` printed nothing — the candidate's first Run is meant to plot the data")
     print(f"  run ..... {' '.join(run)} -> {len(stdout.splitlines())} lines")
 
-    shipped = sorted(name for name in project if name.startswith(TESTS))
-    test = argv(project, "test")
-    if test is None:
-        # A tests/ directory the pad has no button for is worse than none: the candidate cannot
-        # run it, and neither can this check.
-        if shipped:
-            raise SystemExit(f"ships {shipped} with no `test` target in .cpad — nothing in the pad can run them")
-        print("  tests ... none shipped")
-        return
-    _run(test, root, "the test target fails:")
-    print(f"  tests ... {' '.join(test)} over {len(shipped)} file(s)")
+    # A pad project reaches the candidate whole, so anything of ours beside it is named with a
+    # leading underscore and dropped by shipped(). Reaching here with one means that filter was
+    # bypassed, and the thing most likely to be in `_tests/` is the marking scheme.
+    if leaked := sorted(name for name in project if any(part.startswith(PRIVATE) for part in name.split("/"))):
+        raise SystemExit(f"ships {leaked} — a leading underscore means it is ours, and shipped() should have dropped it")
+    print("  private . nothing leaked")
 
 
 def check_python(question: Question) -> None:

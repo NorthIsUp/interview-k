@@ -115,12 +115,19 @@ show({{ points: TWENTY, title: "the data" }});
 # data.py reaches for the package it no longer lives in once the modules sit beside main.py.
 PACKAGE_IMPORT = "from interview_k.show import"
 
+# A leading underscore means the file is ours. A pad project is handed to the candidate whole,
+# so anything the interviewer keeps beside it — `_tests/`, scratch, the marking scheme — is
+# named that way and never ships. It also covers `__init__.py`, which a flat pad has no use for.
+PRIVATE = "_"
+
+
+def shipped(project: dict[str, str]) -> dict[str, str]:
+    return {path: text for path, text in project.items() if not any(part.startswith(PRIVATE) for part in path.split("/"))}
+
 
 def python_project() -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    sources = {
-        f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py") if path.name != "__init__.py"
-    }
+    sources = {f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py")}
     # Every module that reaches for the package has to reach sideways instead; nothing is a
     # package in the pad, they are just files next to each other under src/.
     if not any(PACKAGE_IMPORT in text for text in sources.values()):
@@ -133,13 +140,15 @@ def python_project() -> dict[str, str]:
     main = PY_MAIN.format(stub=stub)
     compile(main, "main.py", "exec")  # a stub that does not parse is worse than none
 
-    return {
-        ".cpad": _cpad("python src/main.py"),
-        # The template boots with `pip3 install -r requirements.txt`; without the file that fails.
-        "requirements.txt": "# The interview is stdlib only.\n",
-        **files,
-        "src/main.py": main,
-    }
+    return shipped(
+        {
+            ".cpad": _cpad("python src/main.py"),
+            # The template boots with `pip3 install -r requirements.txt`; without it that fails.
+            "requirements.txt": "# The interview is stdlib only.\n",
+            **files,
+            "src/main.py": main,
+        }
+    )
 
 
 def strip_ts_extension(source: str) -> str:
@@ -168,12 +177,14 @@ def strip_entry_guard(source: str) -> str:
 def typescript_project() -> dict[str, str]:
     files = {f"src/{path.name}": strip_entry_guard(strip_ts_extension(path.read_text())) for path in (TS / "src").glob("*.ts")}
     manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
-    return {
-        ".cpad": _cpad("npm run main"),
-        "package.json": json.dumps(manifest, indent=2) + "\n",
-        **files,
-        "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
-    }
+    return shipped(
+        {
+            ".cpad": _cpad("npm run main"),
+            "package.json": json.dumps(manifest, indent=2) + "\n",
+            **files,
+            "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
+        }
+    )
 
 
 # ── what the candidate is told ───────────────────────────────────────────────

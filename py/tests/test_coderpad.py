@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.coderpad import QUESTIONS, python_project, read_cookie_header, strip_ts_extension, typescript_project
+from tools.coderpad import QUESTIONS, python_project, read_cookie_header, shipped, strip_ts_extension, typescript_project
 
 RESTORE_TS = re.compile(r'(from\s+"\./[^"]+)(")')
 
@@ -64,6 +64,18 @@ def test_the_printer_is_library_code_not_the_candidate_s() -> None:
     assert "function printClusters" in typescript["src/dataviz.ts"]
     assert "function printClusters" not in typescript["src/main.ts"]
     assert "printClusters" in typescript["src/main.ts"], "still imported, just not defined there"
+
+
+def test_underscore_prefixed_files_never_ship() -> None:
+    """A pad project reaches the candidate whole, so what is ours is marked and dropped.
+
+    `_tests/` is where the grading harness would go; the rule covers `__init__.py` and
+    `__pycache__` for free, which is why neither needs naming anywhere.
+    """
+    assert shipped({"src/main.py": "", "_scratch.py": "", "src/_tests/test_x.py": "", "src/__init__.py": ""}) == {"src/main.py": ""}
+
+    for project in (python_project(), typescript_project()):
+        assert not [name for name in project if any(part.startswith("_") for part in name.split("/"))]
 
 
 def test_the_python_project_has_no_package_imports_left() -> None:
