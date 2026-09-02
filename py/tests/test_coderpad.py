@@ -1,15 +1,16 @@
-"""The pad is a stub in the buffer plus the library attached beside it as custom files.
+"""Each question is a CoderPad project: a stub in `main` with the library beside it.
 
-The failure mode is silent — a pad that still uploads but no longer imports — so the tests
-that matter write the library out and run the buffer against it. The pad resolves the library
-at DATA_DIR, which does not exist here, so the local runs rewrite that prefix to the directory
-the files were written to; what they prove is that the flattened modules still import each
-other and the stub, which is the part that can rot. The TypeScript half needs node, which mise
-installs; it skips rather than fails where there is none.
+The failure mode is silent — a tree that still uploads but no longer imports — so the tests
+that matter write the project to disk and run its `.cpad` command. The TypeScript one is run
+with node rather than ts-node, and node wants the `.ts` specifiers the pad forbids, so the
+local run puts them back; what it proves is that the modules still resolve each other and the
+stub. It needs node, which mise installs, and skips rather than fails where there is none.
 """
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 import sys
@@ -17,66 +18,68 @@ from pathlib import Path
 
 import pytest
 
-from tools.coderpad import (
-    DATA_DIR,
-    QUESTIONS,
-    python_buffer,
-    python_library,
-    read_cookie_header,
-    typescript_buffer,
-    typescript_library,
-)
+from tools.coderpad import QUESTIONS, python_project, read_cookie_header, strip_ts_extension, typescript_project
+
+RESTORE_TS = re.compile(r'(from\s+"\./[^"]+)(")')
 
 
-def _lay_out(library: dict[str, str], buffer: str, root: Path, entry: str) -> Path:
-    for name, text in library.items():
-        (root / name).write_text(text)
-    path = root / entry
-    path.write_text(buffer.replace(f"{DATA_DIR}/", "./"))
-    return path
+def _lay_out(project: dict[str, str], root: Path) -> Path:
+    for name, text in project.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(RESTORE_TS.sub(r"\1.ts\2", text) if name.endswith(".ts") else text)
+    return root
 
 
-def test_python_library_is_flat_and_self_importing() -> None:
-    """Custom files have no directories, so the package import has to become a flat one."""
-    library = python_library()
-    assert set(library) == {"show.py", "data.py"}
-    assert "from interview_k.show import" not in library["data.py"]
-    assert "from show import" in library["data.py"]
+def _run_command(project: dict[str, str]) -> list[str]:
+    """Whatever the Run button would run, straight out of the project's own .cpad."""
+    return str(json.loads(project[".cpad"])["targets"]["run"]["command"]).split()
 
 
-def test_typescript_library_goes_in_verbatim() -> None:
-    """Its modules import each other relatively and land in one directory, so nothing is rewritten."""
-    library = typescript_library()
-    assert {"show.ts", "data.ts", "random.ts", "index.ts"} <= set(library)
-    assert library["show.ts"] == (Path(__file__).parent.parent.parent / "ts/src/show.ts").read_text()
+def test_python_project_has_what_the_template_boots() -> None:
+    project = python_project()
+    # requirements.txt is not decoration: the template's initCommand pip-installs from it.
+    assert {".cpad", "requirements.txt", "src/main.py", "src/show.py", "src/data.py"} == set(project)
+    assert _run_command(project) == ["python", "src/main.py"]
+    # Flattened out of the package: src/ is the import root, so data.py imports its sibling.
+    assert "from interview_k.show import" not in project["src/data.py"]
+    assert "from show import" in project["src/data.py"]
 
 
-@pytest.mark.parametrize("buffer", [python_buffer, typescript_buffer], ids=["py", "ts"])
-def test_buffer_carries_the_stub_and_finds_the_library(buffer: object) -> None:
-    text = buffer()  # type: ignore[operator]
-    assert DATA_DIR in text, "the buffer must point at where CoderPad copies the attached files"
-    assert "kmeans" in text, "the stub must survive extraction from packet.md"
+def test_typescript_project_has_what_the_template_boots() -> None:
+    project = typescript_project()
+    assert {".cpad", "package.json", "src/main.ts", "src/show.ts", "src/data.ts", "src/random.ts"} <= set(project)
+    assert _run_command(project) == ["npm", "run", "main"]
+    assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
 
 
-def test_python_buffer_runs_against_its_library(tmp_path: Path) -> None:
-    path = _lay_out(python_library(), python_buffer(), tmp_path, "main.py")
-    done = subprocess.run([sys.executable, path.name], cwd=tmp_path, capture_output=True, text=True, check=False)
+def test_ts_specifiers_lose_their_extension() -> None:
+    """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
+    assert strip_ts_extension('from "./random.ts";') == 'from "./random";'
+    assert 'from "./random"' in typescript_project()["src/show.ts"]
+
+
+def test_python_project_runs_its_run_target(tmp_path: Path) -> None:
+    project = python_project()
+    _lay_out(project, tmp_path)
+    _, entry = _run_command(project)
+    done = subprocess.run([sys.executable, entry], cwd=tmp_path, capture_output=True, text=True, check=False)
 
     assert done.returncode == 0, done.stderr[-2000:]
     assert "│" in done.stdout, "the first Run should plot the data"
 
 
-@pytest.mark.skipif(shutil.which("node") is None, reason="node is what runs a TypeScript pad")
-def test_typescript_buffer_runs_against_its_library(tmp_path: Path) -> None:
-    path = _lay_out(typescript_library(), typescript_buffer(), tmp_path, "main.ts")
-    done = subprocess.run(["node", path.name], cwd=tmp_path, capture_output=True, text=True, check=False)
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is what runs a TypeScript project")
+def test_typescript_project_runs_its_entry(tmp_path: Path) -> None:
+    _lay_out(typescript_project(), tmp_path)
+    done = subprocess.run(["node", "src/main.ts"], cwd=tmp_path, capture_output=True, text=True, check=False)
 
     assert done.returncode == 0, done.stderr[-2000:]
     assert "│" in done.stdout, "the first Run should plot the data"
 
 
 def test_instructions_are_the_brief_plus_the_language_readme() -> None:
-    """INSTRUCTIONS.md is the problem; each language README documents the code in the pad."""
+    """INSTRUCTIONS.md is the problem; each language README documents the code in the project."""
     brief = (Path(__file__).parent.parent.parent / "INSTRUCTIONS.md").read_text().rstrip()
     python, typescript = (question.instructions() for question in QUESTIONS)
 
@@ -99,7 +102,8 @@ def test_instructions_leave_the_interviewer_half_behind() -> None:
 
 def test_questions_are_the_two_the_interview_ships() -> None:
     assert [q.title for q in QUESTIONS] == ["k-means [py]", "k-means [ts]"]
-    assert [q.language for q in QUESTIONS] == ["python", "typescript"]
+    # Project templates, not languages: `multifile_python` is rejected as a language.
+    assert [q.project_template for q in QUESTIONS] == [79, 93]
     for question in QUESTIONS:
         assert question.solution.exists(), f"{question.title} has no reference solution at {question.solution}"
 

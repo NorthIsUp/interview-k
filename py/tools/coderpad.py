@@ -1,20 +1,19 @@
-"""Assemble the candidate-facing pad for CoderPad, and push it into your question bank.
+"""Build the CoderPad project for each language, and sync it to your question bank.
 
-    uv run python tools/coderpad.py           # write both pads locally, print where they landed
+    uv run python tools/coderpad.py           # write both project trees under build/
     uv run python tools/coderpad.py --push    # also create/update both questions
 
-One question per language — "k-means [py]" and "k-means [ts]" — because the pad's language
-picks the candidate's.
+One question per language — "k-means [py]" and "k-means [ts]" — each a CoderPad *project*, so
+the candidate opens a file tree with the stub in `main` and the library beside it, rather than
+one buffer holding five hundred lines of someone else's code. The questions are templates: an
+interview is a Live Pad or an "Edit a Copy" made from one.
 
-The pad the candidate opens holds the stub and nothing else. `show()` and the datasets ride
-along as CoderPad **custom files**, which the pad copies to DATA_DIR on the container, so the
-buffer is three imports and the problem rather than five hundred lines of someone else's code.
-
-Why not a multi-file project: a project's files live under `fileContents`, which the API will
-accept and then cannot read back — preview and pad creation both 500 on a question written
-that way, and even a project question made in the UI stores `{}` there. Custom files are the
-supported route, and `customFileIds` is an *update* attribute, so the library can be re-synced
-forever without the question ever changing id.
+The files go up with the question. `fileContents` takes a *list* of records whose path is
+base64 — `[{"path": b64("src/main.py"), "contents": "..."}]` — and not the `{path: contents}`
+map it reads back as in some views; sending the map is accepted and then produces a question
+whose preview and pads both 500, which is a long way to find a typo. It is also create-only:
+QuestionUpdateAttributes has no `fileContents`, so changing the tree means replacing the
+question, and --recreate says so out loud because that costs the question its id.
 
 --push drives the same GraphQL endpoint the dashboard uses, authenticated as you by your
 browser session rather than by an API key — CoderPad gates REST API keys behind Enterprise,
@@ -25,14 +24,13 @@ one fails loudly rather than writing anything.
 
 from __future__ import annotations
 
+import base64
 import json
-import mimetypes
 import os
 import re
 import sys
 import urllib.error
 import urllib.request
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -59,38 +57,21 @@ COOKIE_FILE = Path(os.environ.get("CODERPAD_COOKIE_FILE") or Path.home() / ".con
 # the request. We are driving the web app as the browser, so say so.
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 
-# Where an attached custom file lands in the pad's container. CoderPad's own docs: "the file
-# is copied to the language environment's filesystem so participants can write code to access
-# the file", and the editor builds paths as /home/coderpad/data/<filename>.
-DATA_DIR = "/home/coderpad/data"
-
-# Ours, so a re-sync knows which attached files are safe to replace.
-FILE_MARK = "interview-k"
-
 DESCRIPTION = "Implement k-means from scratch. Rubric, hint ladder and expected output: docs/packet.md in the interview-k repo."
 
-
-# ── the library that rides along ─────────────────────────────────────────────
-
-# data.py reaches for the package it no longer lives in once the modules are flat.
-PACKAGE_IMPORT = "from interview_k.show import"
-
-
-def python_library() -> dict[str, str]:
-    """show.py and data.py, flattened out of the package — custom files have no directories."""
-    files = {path.name: path.read_text() for path in (PY / "src/interview_k").glob("*.py") if path.name != "__init__.py"}
-    if PACKAGE_IMPORT not in files["data.py"]:
-        raise SystemExit(f"data.py no longer contains {PACKAGE_IMPORT!r} — update PACKAGE_IMPORT")
-    files["data.py"] = files["data.py"].replace(PACKAGE_IMPORT, "from show import")
-    return files
+# A project question takes its environment — and so its language — from a template. Note that
+# `multifile_python` is a template slug and is rejected as a `language`; the two are separate
+# namespaces. Ids from projectTemplates(category: multifile).
+PYTHON_PROJECT = 79
+TYPESCRIPT_PROJECT = 93
 
 
-def typescript_library() -> dict[str, str]:
-    """Verbatim: the modules import each other relatively, and land in one directory together."""
-    return {path.name: path.read_text() for path in (TS / "src").glob("*.ts")}
+# ── the project each pad opens ───────────────────────────────────────────────
 
 
-# ── the buffer the candidate opens ───────────────────────────────────────────
+def _cpad(command: str) -> str:
+    """The Run button. One target: there is no test suite in the pad to wire a second one to."""
+    return json.dumps({"targets": {"run": {"label": "Main", "command": command}}}, indent=2) + "\n"
 
 
 def _stub(fence: str, opener: str) -> str:
@@ -101,13 +82,10 @@ def _stub(fence: str, opener: str) -> str:
     return match.group(1).rstrip()
 
 
-# The bootstrap belongs to the pad, not to the problem, so it lives here rather than in the
-# packet. Plotting the raw data means the Run button does something before kmeans() returns.
-PY_BUFFER = '''"""Your solution. Press Run to execute this file."""
-
-import sys
-
-sys.path.insert(0, "{data_dir}")  # where CoderPad copies the attached files; must precede them
+# The imports and the first Run belong to the project layout, not to the problem, so they live
+# here rather than in the packet. Plotting the raw data gives the Run button something to do
+# before kmeans() returns anything.
+PY_MAIN = '''"""Your solution. Press Run to execute this file."""
 
 from collections.abc import Sequence
 
@@ -122,10 +100,10 @@ if __name__ == "__main__":
     # once kmeans works:  clusters = kmeans(TWENTY, 3); print_clusters(clusters); show(clusters)
 '''
 
-TS_BUFFER = '''/** Your solution. Press Run to execute this file. */
+TS_MAIN = '''/** Your solution. Press Run to execute this file. */
 
-import {{ show, TWENTY }} from "{data_dir}/index.ts";
-import type {{ Centroid, Point }} from "{data_dir}/show.ts";
+import {{ show, TWENTY }} from "./index";
+import type {{ Centroid, Point }} from "./show";
 
 {stub}
 
@@ -133,25 +111,59 @@ show({{ points: TWENTY, title: "the data" }});
 // once kmeans works:  const clusters = kmeans(TWENTY, 3); printClusters(clusters); show(clusters);
 '''
 
+# data.py reaches for the package it no longer lives in once the modules sit beside main.py.
+PACKAGE_IMPORT = "from interview_k.show import"
 
-def python_buffer() -> str:
+
+def python_project() -> dict[str, str]:
+    """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
+    files = {
+        f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py") if path.name != "__init__.py"
+    }
+    if PACKAGE_IMPORT not in files["src/data.py"]:
+        raise SystemExit(f"data.py no longer contains {PACKAGE_IMPORT!r} — update PACKAGE_IMPORT")
+    files["src/data.py"] = files["src/data.py"].replace(PACKAGE_IMPORT, "from show import")
+
     stub = _stub("python", "from collections.abc import Sequence")
-    # The packet's stub carries its own Sequence import; the buffer already has one.
+    # The packet's stub carries its own Sequence import; main.py already has one.
     stub = stub.replace("from collections.abc import Sequence\n", "", 1).lstrip()
-    text = PY_BUFFER.format(data_dir=DATA_DIR, stub=stub)
-    compile(text, "coderpad buffer", "exec")  # a buffer that does not parse is worse than none
-    return text
+    main = PY_MAIN.format(stub=stub)
+    compile(main, "main.py", "exec")  # a stub that does not parse is worse than none
+
+    return {
+        ".cpad": _cpad("python src/main.py"),
+        # The template boots with `pip3 install -r requirements.txt`; without the file that fails.
+        "requirements.txt": "# The interview is stdlib only.\n",
+        **files,
+        "src/main.py": main,
+    }
 
 
-def typescript_buffer() -> str:
-    return TS_BUFFER.format(data_dir=DATA_DIR, stub=_stub("typescript", "type Cluster = [Centroid, Point[]];"))
+def strip_ts_extension(source: str) -> str:
+    """The repo writes `./random.ts` because node's own type stripping demands the exact path.
+
+    A pad compiles with ts-node, which rejects it — `TS5097: An import path can only end with a
+    '.ts' extension when 'allowImportingTsExtensions' is enabled` — and the pad owns tsconfig.
+    """
+    return re.sub(r'(from\s+")([^"]+)\.ts(")', r"\1\2\3", source)
+
+
+def typescript_project() -> dict[str, str]:
+    files = {f"src/{path.name}": strip_ts_extension(path.read_text()) for path in (TS / "src").glob("*.ts")}
+    manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
+    return {
+        ".cpad": _cpad("npm run main"),
+        "package.json": json.dumps(manifest, indent=2) + "\n",
+        **files,
+        "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
+    }
 
 
 # ── what the candidate is told ───────────────────────────────────────────────
 
 PAD_NOTE = (
-    f"`show()` and the datasets are attached to this pad at `{DATA_DIR}` and already imported. "
-    "Write your solution below and press Run.\n"
+    "`show()` and the datasets are in this project already — open the files on the left. "
+    "Write your solution in `main` and press Run.\n"
 )
 
 # Repo commands: regenerating the answer key, running the harness, grading a candidate's
@@ -178,7 +190,7 @@ def _for_the_candidate(readme: Path) -> str:
 
 @dataclass(frozen=True)
 class Question:
-    """One pad's worth of the interview: a title, a language, and where its parts come from.
+    """One question's worth of the interview, and where each part of it comes from.
 
     `question_id` is the question --push owns, so re-running edits it rather than adding
     another copy. There is no server-side "find my question by title" — questionsSearch is the
@@ -188,37 +200,46 @@ class Question:
     """
 
     title: str
-    language: str
+    project_template: int
     question_id: int | None
     solution: Path
-    buffer: Callable[[], str]
-    library: Callable[[], dict[str, str]]
+    project: Callable[[], dict[str, str]]
     readme: Path
+
+    @property
+    def build_root(self) -> Path:
+        return BUILD / self.title.replace(" ", "_")
 
     def instructions(self) -> str:
         """The brief, then this language's library docs. INSTRUCTIONS.md is the problem; the
-        README is the reference for the code attached to the pad.
+        README is the reference for the code sitting in the project.
         """
         return f"{INSTRUCTIONS.read_text().rstrip()}\n\n{PAD_NOTE}\n{_for_the_candidate(self.readme)}\n"
+
+    def write(self) -> Path:
+        """Lay the project out on disk — what the editor uploader hands to CoderPad."""
+        for name, text in self.project().items():
+            path = self.build_root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        return self.build_root
 
 
 QUESTIONS = (
     Question(
         title="k-means [py]",
-        language="python",
-        question_id=385853,
+        project_template=PYTHON_PROJECT,
+        question_id=385871,
         solution=PY / "main.py",
-        buffer=python_buffer,
-        library=python_library,
+        project=python_project,
         readme=PY / "README.md",
     ),
     Question(
         title="k-means [ts]",
-        language="typescript",
-        question_id=385854,
+        project_template=TYPESCRIPT_PROJECT,
+        question_id=385872,
         solution=TS / "main.ts",
-        buffer=typescript_buffer,
-        library=typescript_library,
+        project=typescript_project,
         readme=TS / "README.md",
     ),
 )
@@ -293,47 +314,30 @@ def _graphql(query: str, variables: dict[str, Any], cookies: str, csrf: str) -> 
     return payload["data"]
 
 
-def _upload(path: Path, title: str, cookies: str, csrf: str) -> str:
-    """Custom files arrive as a GraphQL multipart request; `file` is an Upload scalar.
-
-    Three parts: the operation with the file slot nulled, a map saying which part fills it,
-    and the bytes. There is no JSON form of this — hence the hand-rolled body.
-    """
-    operations = json.dumps(
-        {"query": CREATE_FILE, "variables": {"input": {"customFileAttributes": {"title": title, "description": "", "file": None}}}}
-    )
-    file_map = json.dumps({"0": ["variables.input.customFileAttributes.file"]})
-    boundary = f"----coderpad{uuid.uuid4().hex}"
-    parts = [
-        f'--{boundary}\r\nContent-Disposition: form-data; name="operations"\r\n\r\n{operations}\r\n'.encode(),
-        f'--{boundary}\r\nContent-Disposition: form-data; name="map"\r\n\r\n{file_map}\r\n'.encode(),
-        f'--{boundary}\r\nContent-Disposition: form-data; name="0"; filename="{path.name}"\r\n'
-        f"Content-Type: {mimetypes.guess_type(path.name)[0] or 'application/octet-stream'}\r\n\r\n".encode(),
-        path.read_bytes(),
-        f"\r\n--{boundary}--\r\n".encode(),
-    ]
-    request = urllib.request.Request(
-        GRAPHQL,
-        data=b"".join(parts),
-        headers={
-            "Cookie": cookies,
-            "X-CSRF-Token": csrf,
-            "User-Agent": USER_AGENT,
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "apollo-require-preflight": "true",
-        },
-        method="POST",
-    )
-    payload: Any = json.loads(_open(request))
-    if errors := payload.get("errors"):
-        raise SystemExit(f"uploading {path.name} failed: {json.dumps(errors, indent=2)[:600]}")
-    return cast("str", payload["data"]["createCustomFile"]["customFile"]["id"])
-
-
 # The dashboard's own operations, recovered from its JS bundle (introspection is off in prod).
 LOOKUP = """
-query($id: Int!) { question(id: $id) { id title customFiles { id title } } }
+query($id: Int!) { question(id: $id) { id title fileContents } }
 """
+DELETE = """
+mutation($id: Int!) { deleteQuestion(input: { id: $id }) { question { id } message } }
+"""
+
+FILES_ARE_CREATE_ONLY = "the project files differ from the question's. CoderPad only takes them at creation — re-run with --recreate"
+
+
+def _file_records(project: dict[str, str]) -> list[dict[str, str]]:
+    """The shape CoderPad stores a project in: a list, with each path base64-encoded."""
+    return [{"path": base64.b64encode(path.encode()).decode(), "contents": text} for path, text in project.items()]
+
+
+def _stored_project(question_payload: Any) -> dict[str, str]:  # ruff: ignore[any-type]
+    """The inverse, so a push can tell whether the tree it holds is already up there."""
+    records: Any = question_payload.get("fileContents") or []
+    if not isinstance(records, list):
+        return {}
+    return {base64.b64decode(r["path"]).decode(): r["contents"] for r in cast("list[dict[str, str]]", records)}
+
+
 CREATE = """
 mutation($input: CreateQuestionInput!) {
   createQuestion(input: $input) { question { id title isDraft } errors { message path } }
@@ -344,87 +348,67 @@ mutation($input: UpdateQuestionInput!) {
   updateQuestion(input: $input) { question { id title isDraft } errors { message path } }
 }
 """
-DELETE = """
-mutation($id: Int!) { deleteQuestion(input: { id: $id }) { question { id } message } }
-"""
-CREATE_FILE = """
-mutation($input: CreateCustomFileInput!) {
-  createCustomFile(input: $input) { customFile { id title filename filesize } }
-}
-"""
-DELETE_FILE = """
-mutation($id: String!) { deleteCustomFile(input: { id: $id }) { customFile { id } } }
-"""
 
 
-def push(question: Question, root: Path, cookies: str, csrf: str) -> None:
+def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None:
     existing: Any = None
     if question.question_id is not None:
         existing = _graphql(LOOKUP, {"id": question.question_id}, cookies, csrf)["question"]
         if existing is None:
             raise SystemExit(f"question {question.question_id} is gone from the bank — clear its question_id to create it again")
 
-    # Upload the replacements before detaching the old ones, so a failure here leaves the
-    # question with a working library rather than none.
-    uploaded = [_upload(root / name, f"{FILE_MARK} {name}", cookies, csrf) for name in sorted(question.library())]
-
+    project = question.project()
     fields: dict[str, Any] = {
         "title": question.title,
-        "language": question.language,
         "description": DESCRIPTION,
-        "contents": question.buffer(),
         "solution": question.solution.read_text(),
         "candidateInstructions": [{"instructions": question.instructions(), "defaultVisible": True}],
-        "customFileIds": uploaded,
     }
 
-    if existing is None:
-        result: Any = _graphql(CREATE, {"input": {"questionAttributes": fields}}, cookies, csrf)["createQuestion"]
-        verb = "created"
-    else:
-        result = _graphql(UPDATE, {"input": {"questionAttributes": fields | {"id": question.question_id}}}, cookies, csrf)
+    if existing is not None and not recreate:
+        result: Any = _graphql(UPDATE, {"input": {"questionAttributes": fields | {"id": question.question_id}}}, cookies, csrf)
         result = result["updateQuestion"]
         verb = "updated"
+    else:
+        # projectTemplateId and fileContents are both create-only, and between them they are
+        # what makes the question a project with our code in it.
+        attributes = fields | {"projectTemplateId": question.project_template, "fileContents": _file_records(project)}
+        result = _graphql(CREATE, {"input": {"questionAttributes": attributes}}, cookies, csrf)["createQuestion"]
+        verb = "created"
 
     # A mutation can 200 and still refuse the write; `errors` is where it says so.
     if failures := result.get("errors"):
         raise SystemExit(f"CoderPad rejected {question.title}: {json.dumps(failures, indent=2)[:800]}")
 
-    # Now that the new files are attached, drop the ones this question used to carry. Only
-    # ours: a file we did not upload may be attached to somebody else's question too.
-    attached: list[Any] = [] if existing is None else existing.get("customFiles") or []
-    stale: list[str] = [str(f["id"]) for f in attached if str(f["title"]).startswith(FILE_MARK)]
-    for file_id in stale:
-        _graphql(DELETE_FILE, {"id": file_id}, cookies, csrf)
-
     pushed = result["question"]
-    replaced = f", replaced {len(stale)} old file(s)" if stale else ""
-    print(f"{verb} {question.title} — {pushed['id']} — {len(uploaded)} files attached{replaced}")
-    print(f"  {APP}/dashboard/questions/edit/{pushed['id']}")
-    if question.question_id is None:
+    # Only once the replacement exists: deleting first loses the question outright if the
+    # create then fails, which is exactly how one went missing.
+    if existing is not None and recreate:
+        _graphql(DELETE, {"id": question.question_id}, cookies, csrf)
+        print(f"replaced {question.title} — {question.question_id} deleted")
+
+    print(f"{verb} {question.title} — {pushed['id']} — {APP}/dashboard/questions/edit/{pushed['id']}")
+    if existing is None or recreate:
         print(f"  set question_id={pushed['id']} on the {question.title} entry in {Path(__file__).name}")
+    elif _stored_project(existing) != project:
+        print(f"  {FILES_ARE_CREATE_ONLY}")
 
 
 def main(argv: list[str]) -> int:
-    roots: list[tuple[Question, Path]] = []
     for question in QUESTIONS:
-        root = BUILD / question.title.replace(" ", "_")
-        root.mkdir(parents=True, exist_ok=True)
-        for name, text in question.library().items():
-            (root / name).write_text(text)
-        (root / "pad_buffer.txt").write_text(question.buffer())
-        roots.append((question, root))
-        print(f"wrote {root} — buffer + {len(question.library())} attached files")
+        root = question.write()
+        print(f"wrote {root} — {len(question.project())} files")
 
     if "--push" not in argv:
-        print(f"--push uploads both to your question bank, using the browser cookies in {COOKIE_FILE}")
+        print(f"--push syncs both questions, using the browser cookies in {COOKIE_FILE}")
         return 0
 
     # One session for both, so a cookie that expires mid-run fails before the second write.
     cookies = _cookies()
     csrf = _csrf_token(cookies)
-    for question, root in roots:
-        push(question, root, cookies, csrf)
+    recreate = "--recreate" in argv
+    for question in QUESTIONS:
+        push(question, cookies, csrf, recreate=recreate)
     return 0
 
 

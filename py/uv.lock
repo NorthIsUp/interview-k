@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 4
 requires-python = ">=3.13"
 
 [[package]]
@@ -30,15 +30,6 @@ dev = [
     { name = "numpy" },
     { name = "pyright" },
     { name = "pytest" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "numpy", specifier = ">=2" },
-    { name = "pyright", specifier = ">=1.1" },
-    { name = "pytest", specifier = ">=9" },
 ]
 
 [[package]]
