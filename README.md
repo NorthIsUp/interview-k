@@ -4,20 +4,24 @@ A live-coding interview problem: implement k-means from scratch.
 
 > [!WARNING]
 > This repo contains the **answer key** — `docs/packet.md` (rubric, hint ladder),
-> `main.py` (worked solution), `solutions.py` and `docs/answers.md` (expected
-> output). Don't send a candidate the repo link; paste them the library and the
-> problem statement.
+> `py/main.py` (worked solution), `py/solutions.py` and `docs/answers.md`
+> (expected output). Don't send a candidate the repo link; paste them the library
+> and the problem statement.
+
+Python in `py/`, TypeScript in `ts/`, interview material in `docs/`.
 
 | path | what |
 |---|---|
-| `src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
+| `py/src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
+| `ts/src/` | `show.ts`, `data.ts` — the same two modules, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
 | `docs/answers.md` | reference answers, generated |
-| `solutions.py` | expected centroids / sizes / inertia per dataset |
-| `main.py` | reference solution |
-| `tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
-| `tools/sync_packet.py` | re-embeds library source into the packet |
-| `tests/test_solutions.py` | grades `main.py` against all seven datasets |
+| `py/solutions.py` | expected centroids / sizes / inertia per dataset |
+| `py/main.py` | reference solution |
+| `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
+| `py/tools/sync_packet.py` | re-embeds library source into the packet |
+| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` |
+| `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
 
 ## The problem
 
@@ -68,17 +72,48 @@ uv run interview-k
 If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
 `MARKS` for the ASCII fallback noted on that line.
 
+## TypeScript
+
+`ts/` is a port of those same two modules — no dependencies, no build step
+(Node ≥ 22.18 strips the types itself).
+
+```ts
+import { show, TWENTY, DATASETS } from "./ts/src/index.ts";
+
+show([TWENTY]);                                   // one group -> every point is '·'
+show([left, right]);                              // one mark per group
+show([left, right], { centroids: C, title: "k=2" });
+```
+
+Python's `show(*groups, **kwargs)` becomes `show(groups, options)` — the one API
+difference, since TypeScript can't mix rest args with keywords. The other thing
+that doesn't survive is the `Point`/`Centroid` int/float split: both are
+`[number, number]`, and the distinction is a comment.
+
+The datasets are identical point for point, not merely similar — `ts/src/random.ts`
+reproduces CPython's Mersenne Twister, seeding and all, so `blobs(1)` is the same
+1000 points in both languages and the same answer key grades both.
+`ts/test/parity.test.ts` enforces that against a fixture Python generates, down to
+the byte-for-byte stdout of `show()`.
+
+```sh
+node ts/src/show.ts   # the same demo
+```
+
 ## Development
 
 ```sh
 mise install && mise run sync
-mise run test
+mise run test          # pytest + node --test
+mise run typecheck     # pyright + tsc
 mise run lint
 
+cd py
 uv run pytest tests/test_solutions.py                 # grade main.py
-uv run python tools/answers.py > docs/answers.md      # regenerate answers
+uv run python tools/answers.py > ../docs/answers.md   # regenerate answers
 uv run python tools/answers.py --write-solutions      # regenerate solutions.py
 uv run python tools/sync_packet.py                    # re-embed source in packet
+uv run python tools/ts_fixture.py                     # refresh the TS parity fixture
 ```
 
-To grade a candidate, drop their file in as `main.py` and run the harness.
+To grade a candidate, drop their file in as `py/main.py` and run the harness.

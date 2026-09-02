@@ -2,7 +2,7 @@
 name            = "interview-k"
 version         = "0.1.0"
 description     = "k-means live-coding interview: problem packet, rubric, and a stdlib ASCII scatter helper"
-readme          = "README.md"
+readme          = "../README.md"
 requires-python = ">=3.13"
 license         = { text = "MIT" }
 authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]

@@ -7,7 +7,7 @@ minima. What is well defined is the *global* optimum, so this takes the best of 
 k-means++ restarts by inertia. With fixed data and a fixed seed the result is reproducible,
 which is what makes a candidate's output diffable against it.
 
-    uv run python tools/answers.py > docs/answers.md
+    uv run python tools/answers.py > ../docs/answers.md   # from py/
 """
 
 from __future__ import annotations

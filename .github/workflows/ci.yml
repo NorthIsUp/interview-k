@@ -17,11 +17,30 @@ jobs:
       - uses: jdx/mise-action@v2
         with:
           experimental: true
+
       - run: uv sync --all-extras --dev
+        working-directory: py
       - run: uv run ruff check .
+        working-directory: py
       - run: uv run ruff format --check .
+        working-directory: py
       - run: uv run pyright
+        working-directory: py
       - run: uv run pytest
+        working-directory: py
+
+      - run: npm ci
+        working-directory: ts
+      - run: npx tsc --noEmit
+        working-directory: ts
+      - run: node --test test/*.test.ts
+        working-directory: ts
+
+      # The TS datasets are only a port while they still match Python's, so regenerate
+      # the fixture from Python and fail if it moved.
+      - run: uv run python tools/ts_fixture.py
+        working-directory: py
+      - run: git diff --exit-code ts/test/parity.json
 
   release:
     # Single-pipeline release: GitHub Actions can't trigger workflows from
@@ -45,11 +64,12 @@ jobs:
 
       - name: Detect version bump
         id: version
+        working-directory: py
         run: |
           set -euo pipefail
           new=$(uv version --short)
           # previous version from the parent commit's pyproject.toml
-          if old=$(git show HEAD~1:pyproject.toml 2>/dev/null | uv run --no-project python -c '
+          if old=$(git show HEAD~1:py/pyproject.toml 2>/dev/null | uv run --no-project python -c '
           import sys, tomllib
           print(tomllib.loads(sys.stdin.read())["project"]["version"])
           '); then :; else old=""; fi
@@ -77,11 +97,14 @@ jobs:
 
       - name: Build
         if: steps.version.outputs.bumped == 'true'
+        working-directory: py
         run: uv build
 
       - name: Publish to PyPI
         if: steps.version.outputs.bumped == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: py/dist
 
       - name: Create GitHub Release
         if: steps.version.outputs.bumped == 'true'
@@ -92,4 +115,4 @@ jobs:
           gh release create "$TAG" \
             --title "$TAG" \
             --generate-notes \
-            dist/*
+            py/dist/*

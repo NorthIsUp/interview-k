@@ -1,6 +1,7 @@
 [tools]
 python = "3.13"
 uv     = "latest"
+node   = "24"
 hk     = "latest"
 pkl    = "latest"
 ruff   = "latest"
@@ -11,13 +12,63 @@ experimental = true
 [env]
 UV_PREVIEW = "1"
 
-[tasks.sync]
+# ── python (py/) ────────────────────────────────────────────────────────────
+
+[tasks."py:sync"]
 description = "Sync uv environment"
+dir         = "py"
 run         = "uv sync"
 
-[tasks.test]
-description = "Run tests"
+[tasks."py:test"]
+description = "Run python tests"
+dir         = "py"
 run         = "uv run pytest"
+
+[tasks."py:typecheck"]
+description = "Run pyright"
+dir         = "py"
+run         = "uv run pyright"
+
+[tasks."py:build"]
+description = "Build wheel + sdist"
+dir         = "py"
+run         = "uv build"
+
+[tasks."py:fixture"]
+description = "Regenerate the parity fixture the TS port is tested against"
+dir         = "py"
+run         = "uv run python tools/ts_fixture.py"
+
+# ── typescript (ts/) ────────────────────────────────────────────────────────
+
+[tasks."ts:sync"]
+description = "Install node dependencies"
+dir         = "ts"
+run         = "npm ci"
+
+[tasks."ts:test"]
+description = "Run typescript tests"
+dir         = "ts"
+run         = "node --test test/*.test.ts"
+
+[tasks."ts:typecheck"]
+description = "Run tsc"
+dir         = "ts"
+run         = "npx tsc --noEmit"
+
+# ── both ────────────────────────────────────────────────────────────────────
+
+[tasks.sync]
+description = "Sync both toolchains"
+depends     = ["py:sync", "ts:sync"]
+
+[tasks.test]
+description = "Run all tests"
+depends     = ["py:test", "ts:test"]
+
+[tasks.typecheck]
+description = "Typecheck both languages"
+depends     = ["py:typecheck", "ts:typecheck"]
 
 [tasks.lint]
 description = "Run linters"
@@ -27,26 +78,22 @@ run         = "hk check"
 description = "Auto-fix lint issues"
 run         = "hk fix"
 
-[tasks.typecheck]
-description = "Run pyright"
-run         = "uv run pyright"
-
-[tasks.build]
-description = "Build wheel + sdist"
-run         = "uv build"
-
 [tasks.version]
 description = "Print current version"
+dir         = "py"
 run         = "uv version --short"
 
 [tasks.bump-patch]
 description = "Bump patch version"
+dir         = "py"
 run         = "uv version --bump patch"
 
 [tasks.bump-minor]
 description = "Bump minor version"
+dir         = "py"
 run         = "uv version --bump minor"
 
 [tasks.bump-major]
 description = "Bump major version"
+dir         = "py"
 run         = "uv version --bump major"
