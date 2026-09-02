@@ -55,6 +55,39 @@ def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
 (8.048, 8.5): (8,8),(8,9)
 ```
 
+The TypeScript half of the repo hands them the same thing. `Point` and `Centroid` are
+already defined by `show()`, so the stub does not redeclare them:
+
+```typescript
+type Cluster = [Centroid, Point[]];
+
+/**
+ * Cluster points into k groups.
+ *
+ * k: number of clusters, 1 <= k <= points.length
+ *
+ * Returns one [centroid, its points] pair per cluster.
+ */
+function kmeans(points: readonly Point[], k: number, maxIter = 100): Cluster[] {
+  throw new Error("not implemented");
+}
+
+/** One line per cluster: `centroid: points`. Given to you. */
+function printClusters(clusters: Cluster[]): void {
+  // `%g` / `%.4g`: significant digits with the trailing zeros dropped, as Python prints them.
+  const g = (v: number, digits: number): string => String(Number(v.toPrecision(digits)));
+  const byValue = (a: readonly [number, number], b: readonly [number, number]): number => a[0] - b[0] || a[1] - b[1];
+
+  for (const [centroid, points] of [...clusters].sort(([a], [b]) => byValue(a, b))) {
+    const coords = [...points]
+      .sort(byValue)
+      .map(([x, y]) => `(${g(x, 6)},${g(y, 6)})`)
+      .join(",");
+    console.log(`(${g(centroid[0], 4)}, ${g(centroid[1], 4)}): ${coords}`);
+  }
+}
+```
+
 **Order is not graded** — not cluster order, not point order. `print_clusters` sorts so runs
 are diffable. Sorting inside `kmeans` is a misread: say so, watch what they do (**Values
 Feedback**).

@@ -37,7 +37,7 @@ run         = "uv build"
 [tasks."py:fixture"]
 description = "Regenerate the parity fixture the TS port is tested against"
 dir         = "py"
-run         = "uv run python tools/ts_fixture.py"
+run         = "uv run python -m tools.ts_fixture"
 
 # ── typescript (ts/) ────────────────────────────────────────────────────────
 

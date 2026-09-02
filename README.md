@@ -4,7 +4,7 @@ A live-coding interview problem: implement k-means from scratch.
 
 > [!WARNING]
 > This repo contains the **answer key** — `docs/packet.md` (rubric, hint ladder),
-> `py/main.py` (worked solution), `py/solutions.py` and `docs/answers.md`
+> `py/main.py` / `ts/main.ts` (worked solutions), `py/solutions.py` and `docs/answers.md`
 > (expected output). Don't send a candidate the repo link; paste them the library
 > and the problem statement.
 
@@ -18,10 +18,13 @@ Python in `py/`, TypeScript in `ts/`, interview material in `docs/`.
 | `docs/answers.md` | reference answers, generated |
 | `py/solutions.py` | expected centroids / sizes / inertia per dataset |
 | `py/main.py` | reference solution |
+| `ts/main.ts` | the same solution, ported — same seeds, same clusters |
 | `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
 | `py/tools/sync_packet.py` | re-embeds library source into the packet |
-| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` |
+| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (datasets, renders, answer key) |
+| `py/tools/coderpad.py` | builds both pad bundles; `--push` syncs them to CoderPad |
 | `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
+| `ts/test/solutions.test.ts` | holds `main.ts` to the same answers |
 
 ## The problem
 
@@ -111,6 +114,7 @@ mise install && mise run sync
 mise run test          # pytest + node --test
 mise run typecheck     # pyright + tsc
 mise run lint
+mise run coderpad:sync --push   # push "k-means [py]" and "k-means [ts]" to the question bank
 
 cd py
 uv run pytest tests/test_solutions.py                 # grade main.py
