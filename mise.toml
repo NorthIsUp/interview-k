@@ -99,6 +99,7 @@ dir         = "py"
 run         = "uv version --bump major"
 
 [tasks."coderpad:sync"]
-description = "Assemble the candidate bundle for CoderPad (--push uploads it, needs an API key)"
+description = "Assemble the candidate bundle for CoderPad (--push uploads it, needs ~/.config/coderpad/cookie)"
 dir         = "py"
-run         = "uv run python tools/coderpad.py {{arg(name='args', var=true, default='')}}"
+usage       = 'flag "--push" help="Also upload the bundle to your CoderPad question bank"'
+run         = 'uv run python tools/coderpad.py ${usage_push:+--push}'

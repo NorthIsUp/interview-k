@@ -7,7 +7,9 @@ it, execute it, and use it.
 
 from __future__ import annotations
 
-from tools.coderpad import bundle
+import pytest
+
+from tools.coderpad import bundle, read_cookie_header
 
 
 def test_bundle_executes_and_exposes_the_candidate_surface() -> None:
@@ -24,3 +26,19 @@ def test_bundle_executes_and_exposes_the_candidate_surface() -> None:
 def test_bundle_has_exactly_one_future_import() -> None:
     # two would be a SyntaxError; zero would change how the annotations evaluate
     assert bundle().count("from __future__ import annotations") == 1
+
+
+def test_cookie_header_from_devtools_table() -> None:
+    # Application -> Cookies -> select all -> copy: name, value, domain, path, expires, size...
+    table = "_coderpad_rails_session_3\tabc123\t.coderpad.io\t/\tSession\t57B\n" "currency\tUSD\tapp.coderpad.io\t/\tSession\t11B\n"
+    assert read_cookie_header(table) == "_coderpad_rails_session_3=abc123; currency=USD"
+
+
+def test_cookie_header_from_a_request_header() -> None:
+    assert read_cookie_header("_coderpad_rails_session_3=abc123; currency=USD") == "_coderpad_rails_session_3=abc123; currency=USD"
+
+
+def test_cookie_header_rejects_a_paste_without_the_session() -> None:
+    # the failure this catches is a 200 that quietly serves the logged-out page
+    with pytest.raises(SystemExit, match="_coderpad_rails_session"):
+        read_cookie_header("currency\tUSD\tapp.coderpad.io\t/")
