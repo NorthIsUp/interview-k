@@ -20,8 +20,8 @@ PASTE_IMPORT = ("from interview_k.show import Centroid, Point", "from kmeans_sho
 
 def embed(text: str, marker: str, source: str) -> str:
     start = text.index(marker)
-    end = text.index("\n```", start) + 4
-    return text[:start] + "```python\n" + source + "\n```\n" + text[end:]
+    end = text.index("\n```", start) + 4  # past the closing fence, whose newline text[end:] still owns
+    return text[:start] + "```python\n" + source + "\n```" + text[end:]
 
 
 def main() -> int:

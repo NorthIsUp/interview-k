@@ -1,9 +1,13 @@
 /**
  * ASCII scatter plot for the k-means interview. No dependencies.
  *
- *     show([points])                       -> every point is '·'
- *     show(clusters)                       -> one mark per group, in argument order
- *     show(clusters, { centroids })        -> centroids overlaid as their group's digit
+ *     show({ points })                     -> every point is '·'
+ *     show(clusters)                       -> one mark per group, in list order
+ *     show(clusters, centroids)            -> centroids overlaid as their group's digit
+ *
+ * `clusters` is a list of groups, so a single group is `show({ points })` — passing one
+ * bare list of points is the easy mistake and throws rather than plotting nonsense. The
+ * object form is what Python spells `show(points=pts)`; TypeScript has no keyword args.
  *
  * A group is any `Iterable<Point>` — an array, a generator, whatever. `Iterable` rather
  * than `Array` is deliberate and the opposite of kmeans(): show() makes exactly one pass
@@ -18,9 +22,9 @@
  * so the result is a topology view rather than a scale drawing. Pass them explicitly for
  * a fixed size.
  *
- * Ported from `py/src/interview_k/show.py`. Two things the port cannot carry over:
- * Python's `*groups` becomes an explicit array of groups, and the Point/Centroid int/float
- * split is documentation only — TypeScript has one number type.
+ * Ported from `py/src/interview_k/show.py`. The one thing the port cannot carry over is
+ * the Point/Centroid int/float split: it is documentation only, TypeScript has one number
+ * type.
  */
 
 import { round } from "./random.ts";
@@ -37,11 +41,16 @@ export type Centroid = readonly [number, number];
 /** (row, col) into the character grid, flattened to `row * width + col`. */
 type Cell = number;
 
-export interface ShowOptions {
-  centroids?: Iterable<Centroid>;
+export interface ShowBox {
   height?: number;
   width?: number;
   title?: string;
+}
+
+/** The single-group call: `show({ points })`, TypeScript's stand-in for a keyword arg. */
+export interface ShowSpec extends ShowBox {
+  points: Iterable<Point>;
+  centroids?: Iterable<Centroid>;
 }
 
 /** Split points into the plottable ones and a count of the rest. */
@@ -83,26 +92,41 @@ function projection(points: Centroid[], width: number, height: number): (point: 
   };
 }
 
-/** Print an ASCII scatter, one mark per group. See the module docstring. */
-export function show(groups: Iterable<Point>[] = [], opts: ShowOptions = {}): void {
-  const clusters = groups.map(finite);
-  const [centers, centroidsDropped] = finite(opts.centroids ?? []);
-  const dropped = centroidsDropped + clusters.reduce((sum, [, n]) => sum + n, 0);
-  const points = clusters.flatMap(([group]) => group);
+/** Catch the call that would otherwise plot nonsense: one bare list of points as clusters. */
+function checked(clusters: Iterable<Point>[]): Iterable<Point>[] {
+  const head = clusters[0];
+  if (Array.isArray(head) && typeof head[0] === "number") {
+    throw new TypeError("show() takes a list of clusters — use show({ points }) for one group, show([a, b]) for several");
+  }
+  return clusters;
+}
 
-  if (points.length === 0 && centers.length === 0) {
+export function show(clusters: Iterable<Point>[], centroids?: Iterable<Centroid>, box?: ShowBox): void;
+export function show(spec: ShowSpec): void;
+
+/** Print an ASCII scatter, one mark per group. See the module docstring. */
+export function show(first: Iterable<Point>[] | ShowSpec = [], centroids?: Iterable<Centroid>, box: ShowBox = {}): void {
+  const spec = Array.isArray(first) ? null : first;
+  const opts = spec ?? { ...box, centroids };
+
+  const groups = (spec ? [spec.points] : checked(first as Iterable<Point>[])).map(finite);
+  const [centers, centroidsDropped] = finite(opts.centroids ?? []);
+  const dropped = centroidsDropped + groups.reduce((sum, [, n]) => sum + n, 0);
+  const plotted = groups.flatMap(([group]) => group);
+
+  if (plotted.length === 0 && centers.length === 0) {
     console.log(dropped ? `(nothing to plot — ${dropped} unusable)` : "(no points)");
     return;
   }
 
   const [width, height] = terminalBox(opts.width ?? 0, opts.height ?? 0);
-  const cellOf = projection([...points, ...centers], width, height);
+  const cellOf = projection([...plotted, ...centers], width, height);
 
   // Groups overlap, so tally every mark landing in a cell and let the majority hold it.
   // Insertion order breaks ties, which is how Python's Counter.most_common(1) breaks them.
-  const marks = clusters.length === 1 ? UNLABELED : MARKS;
+  const marks = groups.length === 1 ? UNLABELED : MARKS;
   const tally = new Map<Cell, Map<string, number>>();
-  clusters.forEach(([group], index) => {
+  groups.forEach(([group], index) => {
     const mark = marks[index % marks.length]!;
     for (const point of group) {
       const cell = cellOf(point);
@@ -143,19 +167,15 @@ export function demo(): void {
   const left = quad.filter(([x]) => x < 0);
   const right = quad.filter(([x]) => x >= 0);
 
-  show([quad], { width: 44, height: 8, title: "one group -> unlabeled" });
-  show([left, right], {
-    centroids: [
-      [-10, -20],
-      [10, -20],
-    ],
-    width: 44,
-    height: 8,
-    title: "two groups + centroids",
-  });
-  show([left.values(), right.values()], { width: 44, height: 8, title: "iterators — safe, show() is single-pass" });
-  show([quad], { centroids: [[0, NaN]], width: 44, height: 8, title: "NaN centroid does not crash" });
-  show([], { width: 44 });
+  show({ points: quad, width: 44, height: 8, title: "one group -> unlabeled" });
+  const halves: Centroid[] = [
+    [-10, -20],
+    [10, -20],
+  ];
+  show([left, right], halves, { width: 44, height: 8, title: "two groups + centroids" });
+  show([left.values(), right.values()], undefined, { width: 44, height: 8, title: "iterators — safe, show() is single-pass" });
+  show([quad], [[0, NaN]], { width: 44, height: 8, title: "NaN centroid does not crash" });
+  show([], undefined, { width: 44 });
 }
 
 if (import.meta.main) demo();

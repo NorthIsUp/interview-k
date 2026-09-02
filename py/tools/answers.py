@@ -179,8 +179,8 @@ if __name__ == "__main__":
     print("```text")
     elongated_answer = solve(ELONGATED, 3)
     show(
-        *[pts for _, pts in elongated_answer],
-        centroids=[c for c, _ in elongated_answer],
+        [pts for _, pts in elongated_answer],
+        [c for c, _ in elongated_answer],
         width=56,
         height=12,
         title="lowest-inertia answer — three wedges, not three bars",

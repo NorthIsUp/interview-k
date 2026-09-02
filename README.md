@@ -46,10 +46,13 @@ or a bare REPL.
 ```python
 from interview_k import show
 
-show(points)  # one group -> every point is '·'
-show(*clusters)  # one mark per group, in argument order
-show(*clusters, centroids=C)  # centroids overlaid as their group's digit
+show(points=pts)  # one group -> every point is '·'
+show(clusters)  # one mark per group, in list order
+show(clusters, C)  # centroids overlaid as their group's digit
 ```
+
+`clusters` is a list of groups, so one group is `show(points=pts)`. Passing a
+bare list of points raises rather than plotting nonsense.
 
 A group is any iterable of any iterable pair — tuples, lists, ndarray rows,
 generators. Dimensions past the first two are ignored. `width`/`height` default
@@ -80,15 +83,16 @@ If `●▲■◆★✚✦❖` render double-width in your terminal the grid will
 ```ts
 import { show, TWENTY, DATASETS } from "./ts/src/index.ts";
 
-show([TWENTY]);                                   // one group -> every point is '·'
+show({ points: TWENTY });                         // one group -> every point is '·'
 show([left, right]);                              // one mark per group
-show([left, right], { centroids: C, title: "k=2" });
+show([left, right], C, { title: "k=2" });         // centroids as their group's digit
 ```
 
-Python's `show(*groups, **kwargs)` becomes `show(groups, options)` — the one API
-difference, since TypeScript can't mix rest args with keywords. The other thing
-that doesn't survive is the `Point`/`Centroid` int/float split: both are
-`[number, number]`, and the distinction is a comment.
+Same two call shapes as Python. The object form is what Python spells
+`show(points=pts)` — TypeScript has no keyword arguments, so the single-group
+call takes an object instead. What doesn't survive the port is the
+`Point`/`Centroid` int/float split: both are `[number, number]`, and the
+distinction is a comment.
 
 The datasets are identical point for point, not merely similar — `ts/src/random.ts`
 reproduces CPython's Mersenne Twister, seeding and all, so `blobs(1)` is the same

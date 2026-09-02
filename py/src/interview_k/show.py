@@ -1,8 +1,11 @@
 """ASCII scatter plot for the k-means interview. Stdlib only.
 
-    show(points)                  -> every point is '·'
-    show(*clusters)               -> one mark per group, in argument order
-    show(*clusters, centroids=C)  -> centroids overlaid as their group's digit
+    show(points=pts)              -> every point is '·'
+    show(clusters)                -> one mark per group, in list order
+    show(clusters, C)             -> centroids overlaid as their group's digit
+
+`clusters` is a list of groups, so a single group is `show(points=pts)` — passing one bare
+list of points is the easy mistake and raises rather than plotting nonsense.
 
 A group is any iterable of Point — a list, a generator, whatever. `Iterable` rather than
 `Sequence` is deliberate and the opposite of kmeans(): show() makes exactly one pass and
@@ -25,7 +28,7 @@ from shutil import get_terminal_size
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
 MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
 UNLABELED = "·"
@@ -78,30 +81,43 @@ def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Ce
     return cell
 
 
-def show(
-    *groups: Iterable[Point],
+def _groups(clusters: Sequence[Iterable[Point]], points: Iterable[Point] | None) -> Sequence[Iterable[Point]]:
+    """Resolve the two call shapes, and catch the one that would silently plot nonsense."""
+    if points is not None:
+        return [points]
+    first = clusters[0] if clusters else None
+    # a non-empty tuple of numbers is a Point, so it is a bare point list, not a cluster list
+    if isinstance(first, tuple) and first and all(isinstance(v, (int, float)) for v in first):
+        raise TypeError("show() takes a list of clusters — use show(points=pts) for one group, show([a, b]) for several")
+    return clusters
+
+
+def show(  # ruff: ignore[too-many-arguments] — width/height/title are plotting knobs, keyword-only and defaulted
+    clusters: Sequence[Iterable[Point]] = (),
     centroids: Iterable[Centroid] | None = None,
+    *,
+    points: Iterable[Point] | None = None,
     height: int = 0,
     width: int = 0,
     title: str = "",
 ) -> None:
     """Print an ASCII scatter, one mark per group. See the module docstring."""
-    clusters = [_finite(group) for group in groups]
+    groups = [_finite(group) for group in _groups(clusters, points)]
     centers, dropped = _finite(centroids if centroids is not None else ())
-    dropped += sum(n for _, n in clusters)
-    points = [point for group, _ in clusters for point in group]
+    dropped += sum(n for _, n in groups)
+    plotted = [point for group, _ in groups for point in group]
 
-    if not points and not centers:
+    if not plotted and not centers:
         print(f"(nothing to plot — {dropped} unusable)" if dropped else "(no points)")
         return
 
     width, height = _terminal_box(width, height)
-    cell_of = _projection(points + centers, width, height)
+    cell_of = _projection(plotted + centers, width, height)
 
     # Groups overlap, so tally every mark landing in a cell and let the majority hold it.
-    marks = UNLABELED if len(clusters) == 1 else MARKS
+    marks = UNLABELED if len(groups) == 1 else MARKS
     tally: defaultdict[Cell, Counter[str]] = defaultdict(Counter)
-    for mark, (group, _) in zip(cycle(marks), clusters):
+    for mark, (group, _) in zip(cycle(marks), groups):
         for point in group:
             tally[cell_of(point)][mark] += 1
 
@@ -125,10 +141,10 @@ def _demo() -> None:
     left = [p for p in quad if p[0] < 0]
     right = [p for p in quad if p[0] >= 0]
 
-    show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(left, right, centroids=[(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
-    show((p for p in left), (p for p in right), width=44, height=8, title="generators — safe, show() is single-pass")
-    show(quad, centroids=[(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
+    show(points=quad, width=44, height=8, title="one group -> unlabeled")
+    show([left, right], [(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
+    show([(p for p in left), (p for p in right)], width=44, height=8, title="generators — safe, show() is single-pass")
+    show([quad], [(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
     show(width=44)
 
     try:
@@ -139,8 +155,8 @@ def _demo() -> None:
         rng = np.random.default_rng(1)
         arr = rng.normal(0, 20, (80, 2))
         pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
-        mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
-        show(*mid, centroids=[(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
+        mid = [[p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]]
+        show(mid, [(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
 
 
 if __name__ == "__main__":

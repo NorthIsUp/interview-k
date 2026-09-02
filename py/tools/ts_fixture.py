@@ -15,6 +15,10 @@ import hashlib
 import io
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from interview_k.data import DATASETS, TWENTY
 from interview_k.show import Point, show
@@ -28,10 +32,10 @@ def digest(points: list[Point]) -> str:
     return hashlib.sha256(";".join(f"{x},{y}" for x, y in points).encode()).hexdigest()
 
 
-def rendered(**kwargs: object) -> str:
+def rendered(draw: Callable[[], None]) -> str:
     buffer = io.StringIO()
     with contextlib.redirect_stdout(buffer):
-        show(*kwargs.pop("groups"), **kwargs)  # type: ignore[arg-type]
+        draw()
     return buffer.getvalue()
 
 
@@ -42,12 +46,12 @@ def main() -> int:
             for name, points in ({"twenty": TWENTY} | DATASETS).items()
         },
         "renders": {
-            "twenty": rendered(groups=[TWENTY], width=40, height=12, title="twenty"),
-            "two_groups": rendered(groups=[SQUARE[:2], SQUARE[2:]], centroids=[(0.0, 0.5), (1.0, 0.5)], width=20, height=5),
-            "nan_centroid": rendered(groups=[SQUARE], centroids=[(float("nan"), 0.0)], width=20, height=5),
-            "empty": rendered(groups=[], width=20, height=5),
-            "identical": rendered(groups=[[(2, 2)] * 5], width=20, height=5),
-            "blobs": rendered(groups=[DATASETS["blobs"]], width=60, height=16, title="blobs"),
+            "twenty": rendered(lambda: show(points=TWENTY, width=40, height=12, title="twenty")),
+            "two_groups": rendered(lambda: show([SQUARE[:2], SQUARE[2:]], [(0.0, 0.5), (1.0, 0.5)], width=20, height=5)),
+            "nan_centroid": rendered(lambda: show([SQUARE], [(float("nan"), 0.0)], width=20, height=5)),
+            "empty": rendered(lambda: show([], width=20, height=5)),
+            "identical": rendered(lambda: show(points=[(2, 2)] * 5, width=20, height=5)),
+            "blobs": rendered(lambda: show(points=DATASETS["blobs"], width=60, height=16, title="blobs")),
         },
     }
     FIXTURE.write_text(json.dumps(fixture, indent=2) + "\n")

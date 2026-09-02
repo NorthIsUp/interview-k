@@ -47,12 +47,12 @@ const HALF: Centroid[] = [
 ];
 
 const renders: Record<string, () => void> = {
-  twenty: () => show([TWENTY], { width: 40, height: 12, title: "twenty" }),
-  two_groups: () => show([SQUARE.slice(0, 2), SQUARE.slice(2)], { centroids: HALF, width: 20, height: 5 }),
-  nan_centroid: () => show([SQUARE], { centroids: [[NaN, 0]], width: 20, height: 5 }),
-  empty: () => show([], { width: 20, height: 5 }),
-  identical: () => show([Array.from({ length: 5 }, () => [2, 2] as Point)], { width: 20, height: 5 }),
-  blobs: () => show([DATASETS.blobs!], { width: 60, height: 16, title: "blobs" }),
+  twenty: () => show({ points: TWENTY, width: 40, height: 12, title: "twenty" }),
+  two_groups: () => show([SQUARE.slice(0, 2), SQUARE.slice(2)], HALF, { width: 20, height: 5 }),
+  nan_centroid: () => show([SQUARE], [[NaN, 0]], { width: 20, height: 5 }),
+  empty: () => show([], undefined, { width: 20, height: 5 }),
+  identical: () => show({ points: Array.from({ length: 5 }, () => [2, 2] as Point), width: 20, height: 5 }),
+  blobs: () => show({ points: DATASETS.blobs!, width: 60, height: 16, title: "blobs" }),
 };
 
 for (const [name, draw] of Object.entries(renders)) {
