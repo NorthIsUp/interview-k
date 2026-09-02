@@ -72,6 +72,15 @@ def test_the_python_project_has_no_package_imports_left() -> None:
         assert "interview_k" not in text, f"{name} still reaches for the package"
 
 
+def test_no_import_meta_reaches_the_pad() -> None:
+    """ts-node compiles the project as CommonJS, where `import.meta` is TS1343 + TS2339.
+
+    One line of it in show.ts fails the whole Run, so the guard comes off on the way in.
+    """
+    for name, text in typescript_project().items():
+        assert "import.meta" not in text, f"{name} would not compile in a pad"
+
+
 def test_ts_specifiers_lose_their_extension() -> None:
     """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
     assert strip_ts_extension('from "./random.ts";') == 'from "./random";'

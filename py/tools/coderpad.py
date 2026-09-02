@@ -151,8 +151,22 @@ def strip_ts_extension(source: str) -> str:
     return re.sub(r'(from\s+")([^"]+)\.ts(")', r"\1\2\3", source)
 
 
+# show.ts ends with one, to run its demo when node executes the file directly.
+TS_ENTRY_GUARD = "if (import.meta.main)"
+
+
+def strip_entry_guard(source: str) -> str:
+    """A pad compiles with ts-node under CommonJS, where `import.meta` is a compile error.
+
+    TS1343 ("only allowed when '--module' is es2020...") plus TS2339 (`main` is not on
+    ImportMeta), and it takes the whole project down with it — the candidate's Run button
+    fails on a line that only exists so `node src/show.ts` can show its own demo.
+    """
+    return "\n".join(line for line in source.splitlines() if not line.startswith(TS_ENTRY_GUARD)).rstrip() + "\n"
+
+
 def typescript_project() -> dict[str, str]:
-    files = {f"src/{path.name}": strip_ts_extension(path.read_text()) for path in (TS / "src").glob("*.ts")}
+    files = {f"src/{path.name}": strip_entry_guard(strip_ts_extension(path.read_text())) for path in (TS / "src").glob("*.ts")}
     manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
     return {
         ".cpad": _cpad("npm run main"),
@@ -237,7 +251,7 @@ QUESTIONS = (
     Question(
         title="k-means [py]",
         project_template=PYTHON_PROJECT,
-        question_id=385877,
+        question_id=385885,
         solution=PY / "main.py",
         project=python_project,
         readme=PY / "README.md",
@@ -245,7 +259,7 @@ QUESTIONS = (
     Question(
         title="k-means [ts]",
         project_template=TYPESCRIPT_PROJECT,
-        question_id=385878,
+        question_id=385886,
         solution=TS / "main.ts",
         project=typescript_project,
         readme=TS / "README.md",
