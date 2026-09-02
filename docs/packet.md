@@ -38,16 +38,9 @@ def kmeans(points: Sequence[Point], k: int, max_iter: int = 100) -> list[tuple[C
     """
     ...
 
-
-def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
-    """One line per cluster: `centroid: points`."""
-    for centroid, pts in sorted(clusters):
-        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
-        cx, cy = centroid
-        print(f"({cx:.4g}, {cy:.4g}): {coords}")
 ```
 
-`print_clusters` is given to them.
+`print_clusters` / `printClusters` is given to them, in the `dataviz` module beside their file.
 
 ```
 (0, 8.5): (0,8)
@@ -70,21 +63,6 @@ type Cluster = [Centroid, Point[]];
  */
 function kmeans(points: readonly Point[], k: number, maxIter = 100): Cluster[] {
   throw new Error("not implemented");
-}
-
-/** One line per cluster: `centroid: points`. Given to you. */
-function printClusters(clusters: Cluster[]): void {
-  // `%g` / `%.4g`: significant digits with the trailing zeros dropped, as Python prints them.
-  const g = (v: number, digits: number): string => String(Number(v.toPrecision(digits)));
-  const byValue = (a: readonly [number, number], b: readonly [number, number]): number => a[0] - b[0] || a[1] - b[1];
-
-  for (const [centroid, points] of [...clusters].sort(([a], [b]) => byValue(a, b))) {
-    const coords = [...points]
-      .sort(byValue)
-      .map(([x, y]) => `(${g(x, 6)},${g(y, 6)})`)
-      .join(",");
-    console.log(`(${g(centroid[0], 4)}, ${g(centroid[1], 4)}): ${coords}`);
-  }
 }
 ```
 

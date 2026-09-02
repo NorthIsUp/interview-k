@@ -16,6 +16,7 @@ import pathlib
 import random
 
 from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
+from interview_k.dataviz import print_clusters
 from interview_k.show import Centroid, Point, show
 
 K = 3
@@ -70,13 +71,6 @@ def solve(points: list[Point], k: int) -> list[tuple[Centroid, list[Point]]]:
     """Best of N_INIT restarts by inertia — the global optimum, for practical purposes."""
     rng = random.Random(SEED)
     return min((_lloyd(points, k, rng) for _ in range(N_INIT)), key=_inertia)
-
-
-def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
-    for centroid, pts in sorted(clusters):
-        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
-        cx, cy = centroid
-        print(f"({cx:.4g}, {cy:.4g}): {coords}")
 
 
 READING = {

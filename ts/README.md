@@ -29,6 +29,17 @@ half-finished solution still draws something.
 What doesn't survive the port is the `Point`/`Centroid` int/float split: both
 are `[number, number]`, and the distinction is a comment.
 
+## `printClusters()` — one line per cluster
+
+```ts
+import { printClusters } from "./src/dataviz.ts";
+
+printClusters(clusters); // (0, 8.5): (0,8)
+```
+
+Byte-for-byte what Python's `print_clusters` prints, sorted the same way, so the two languages
+diff against the same answer key.
+
 ## The datasets
 
 Identical to Python's point for point, not merely similar — `src/random.ts`

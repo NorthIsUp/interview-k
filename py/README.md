@@ -33,6 +33,17 @@ half-finished solution still draws something:
 If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
 `MARKS` for the ASCII fallback noted on that line.
 
+## `print_clusters()` — one line per cluster
+
+```python
+from dataviz import print_clusters
+
+print_clusters(clusters)  # (0, 8.5): (0,8)
+```
+
+Sorted by centroid, and points sorted within each cluster, so two runs are diffable. Cluster
+order and point order are not part of the contract — sorting inside `kmeans` is a misread.
+
 ## The datasets
 
 `data.py` generates seven of them once at import and exports each as a

@@ -39,7 +39,7 @@ def _run_command(project: dict[str, str]) -> list[str]:
 def test_python_project_has_what_the_template_boots() -> None:
     project = python_project()
     # requirements.txt is not decoration: the template's initCommand pip-installs from it.
-    assert {".cpad", "requirements.txt", "src/main.py", "src/show.py", "src/data.py"} == set(project)
+    assert {".cpad", "requirements.txt", "src/main.py", "src/show.py", "src/data.py", "src/dataviz.py"} == set(project)
     assert _run_command(project) == ["python", "src/main.py"]
     # Flattened out of the package: src/ is the import root, so data.py imports its sibling.
     assert "from interview_k.show import" not in project["src/data.py"]
@@ -51,6 +51,25 @@ def test_typescript_project_has_what_the_template_boots() -> None:
     assert {".cpad", "package.json", "src/main.ts", "src/show.ts", "src/data.ts", "src/random.ts"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
+
+
+def test_the_printer_is_library_code_not_the_candidate_s() -> None:
+    """`print_clusters` is given to them, so it ships in dataviz — not pasted into their file."""
+    python, typescript = python_project(), typescript_project()
+
+    assert "def print_clusters" in python["src/dataviz.py"]
+    assert "def print_clusters" not in python["src/main.py"]
+    assert "from dataviz import print_clusters" in python["src/main.py"]
+
+    assert "function printClusters" in typescript["src/dataviz.ts"]
+    assert "function printClusters" not in typescript["src/main.ts"]
+    assert "printClusters" in typescript["src/main.ts"], "still imported, just not defined there"
+
+
+def test_the_python_project_has_no_package_imports_left() -> None:
+    """Nothing is a package in the pad — the modules sit next to each other under src/."""
+    for name, text in python_project().items():
+        assert "interview_k" not in text, f"{name} still reaches for the package"
 
 
 def test_ts_specifiers_lose_their_extension() -> None:

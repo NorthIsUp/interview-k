@@ -28,6 +28,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import sys
 import urllib.error
 import urllib.request
@@ -90,7 +91,7 @@ PY_MAIN = '''"""Your solution. Press Run to execute this file."""
 from collections.abc import Sequence
 
 from data import BLOBS, DATASETS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
-from show import show
+from dataviz import print_clusters, show
 
 {stub}
 
@@ -102,7 +103,7 @@ if __name__ == "__main__":
 
 TS_MAIN = '''/** Your solution. Press Run to execute this file. */
 
-import {{ show, TWENTY }} from "./index";
+import {{ printClusters, show, TWENTY }} from "./index";
 import type {{ Centroid, Point }} from "./show";
 
 {stub}
@@ -117,12 +118,14 @@ PACKAGE_IMPORT = "from interview_k.show import"
 
 def python_project() -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    files = {
+    sources = {
         f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py") if path.name != "__init__.py"
     }
-    if PACKAGE_IMPORT not in files["src/data.py"]:
-        raise SystemExit(f"data.py no longer contains {PACKAGE_IMPORT!r} — update PACKAGE_IMPORT")
-    files["src/data.py"] = files["src/data.py"].replace(PACKAGE_IMPORT, "from show import")
+    # Every module that reaches for the package has to reach sideways instead; nothing is a
+    # package in the pad, they are just files next to each other under src/.
+    if not any(PACKAGE_IMPORT in text for text in sources.values()):
+        raise SystemExit(f"no module imports {PACKAGE_IMPORT!r} any more — update PACKAGE_IMPORT")
+    files = {name: text.replace(PACKAGE_IMPORT, "from show import") for name, text in sources.items()}
 
     stub = _stub("python", "from collections.abc import Sequence")
     # The packet's stub carries its own Sequence import; main.py already has one.
@@ -217,7 +220,12 @@ class Question:
         return f"{INSTRUCTIONS.read_text().rstrip()}\n\n{PAD_NOTE}\n{_for_the_candidate(self.readme)}\n"
 
     def write(self) -> Path:
-        """Lay the project out on disk — what the editor uploader hands to CoderPad."""
+        """Lay the project out on disk, from scratch.
+
+        From scratch because running the project here leaves __pycache__ behind, and anything
+        still sitting in the directory is a file somebody could upload into a pad by hand.
+        """
+        shutil.rmtree(self.build_root, ignore_errors=True)
         for name, text in self.project().items():
             path = self.build_root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -229,7 +237,7 @@ QUESTIONS = (
     Question(
         title="k-means [py]",
         project_template=PYTHON_PROJECT,
-        question_id=385871,
+        question_id=385877,
         solution=PY / "main.py",
         project=python_project,
         readme=PY / "README.md",
@@ -237,7 +245,7 @@ QUESTIONS = (
     Question(
         title="k-means [ts]",
         project_template=TYPESCRIPT_PROJECT,
-        question_id=385872,
+        question_id=385878,
         solution=TS / "main.ts",
         project=typescript_project,
         readme=TS / "README.md",
