@@ -8,10 +8,15 @@ A live-coding interview problem: implement k-means from scratch.
 > (expected output). Don't send a candidate the repo link; paste them the library
 > and the problem statement.
 
-Python in `py/`, TypeScript in `ts/`, interview material in `docs/`.
+Python in `py/`, TypeScript in `ts/`, interview material in `docs/`. Each
+language documents its own half:
+
+- [`py/README.md`](py/README.md) — `show()`, the datasets, the Python harness
+- [`ts/README.md`](ts/README.md) — the same two modules, ported
 
 | path | what |
 |---|---|
+| `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
 | `py/src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
 | `ts/src/` | `show.ts`, `data.ts` — the same two modules, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
@@ -41,71 +46,7 @@ def kmeans(X, k):
 
 Plenty is left unspecified on purpose. Ask.
 
-## `show()` — ASCII scatter, stdlib only
-
-No numpy, no matplotlib, so it renders the same in CoderPad, Colab, a notebook,
-or a bare REPL.
-
-```python
-from interview_k import show
-
-show(points=pts)  # one group -> every point is '·'
-show(clusters)  # one mark per group, in list order
-show(clusters, C)  # centroids overlaid as their group's digit
-```
-
-`clusters` is a list of groups, so one group is `show(points=pts)`. Passing a
-bare list of points raises rather than plotting nonsense.
-
-A group is any iterable of any iterable pair — tuples, lists, ndarray rows,
-generators. Dimensions past the first two are ignored. `width`/`height` default
-to the terminal size, and the domain is stretched to fill it on each axis
-independently: a topology view, not a scale drawing.
-
-Non-finite coordinates are dropped and counted rather than raised on, so a
-half-finished solution still draws something:
-
-```text
-└────────────────────────────  1 point(s) unusable
-```
-
-Run the module to see every input shape it accepts:
-
-```sh
-uv run interview-k
-```
-
-If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
-`MARKS` for the ASCII fallback noted on that line.
-
-## TypeScript
-
-`ts/` is a port of those same two modules — no dependencies, no build step
-(Node ≥ 22.18 strips the types itself).
-
-```ts
-import { show, TWENTY, DATASETS } from "./ts/src/index.ts";
-
-show({ points: TWENTY });                         // one group -> every point is '·'
-show([left, right]);                              // one mark per group
-show([left, right], C, { title: "k=2" });         // centroids as their group's digit
-```
-
-Same two call shapes as Python. The object form is what Python spells
-`show(points=pts)` — TypeScript has no keyword arguments, so the single-group
-call takes an object instead. What doesn't survive the port is the
-`Point`/`Centroid` int/float split: both are `[number, number]`, and the
-distinction is a comment.
-
-The datasets are identical point for point, not merely similar — `ts/src/random.ts`
-reproduces CPython's Mersenne Twister, seeding and all, so `blobs(1)` is the same
-1000 points in both languages and the same answer key grades both.
-`ts/test/parity.test.ts` enforces that against a fixture Python generates, down to
-the byte-for-byte stdout of `show()`.
-
-```sh
-node ts/src/show.ts   # the same demo
-```
+`INSTRUCTIONS.md` is the version a candidate sees — keep the two in step.
 
 ## Development
 
@@ -117,13 +58,8 @@ mise run lint
 mise run coderpad:sync --push   # sync "k-means [py]" and "k-means [ts]" to the question bank
                                 # add --recreate to change a project's files: CoderPad only
                                 # takes them at creation, so the questions get new ids
-
-cd py
-uv run pytest tests/test_solutions.py                 # grade main.py
-uv run python tools/answers.py > ../docs/answers.md   # regenerate answers
-uv run python tools/answers.py --write-solutions      # regenerate solutions.py
-uv run python tools/sync_packet.py                    # re-embed source in packet
-uv run python tools/ts_fixture.py                     # refresh the TS parity fixture
 ```
+
+Per-language commands live in each half's README.
 
 To grade a candidate, drop their file in as `py/main.py` and run the harness.

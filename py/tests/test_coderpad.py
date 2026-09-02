@@ -66,20 +66,27 @@ def test_typescript_project_runs_its_run_target(tmp_path: Path) -> None:
     assert "│" in done.stdout, "the first Run should plot the data"
 
 
-def test_instructions_come_from_the_readme_without_the_interviewer_half() -> None:
-    """The README's warning block, file table and Development section are not the candidate's.
+def test_instructions_are_the_brief_plus_the_language_readme() -> None:
+    """INSTRUCTIONS.md is the problem; each language README documents the code in the pad."""
+    brief = (Path(__file__).parent.parent.parent / "INSTRUCTIONS.md").read_text().rstrip()
+    python, typescript = (question.instructions() for question in QUESTIONS)
 
-    They say where the worked solution and the expected output live, and how the candidate is
-    graded. The prose sections quoted here mention an answer key exists, which is both obvious
-    and useless without the repo; naming its path is the thing to keep out.
-    """
+    for text in (python, typescript):
+        assert brief in text, "the candidate brief goes in whole"
+    # Each pad gets its own half and not the other's.
+    assert "from interview_k import show" in python
+    assert './src/index.ts"' in typescript
+    assert "from interview_k import show" not in typescript
+
+
+def test_instructions_leave_the_interviewer_half_behind() -> None:
+    """A README's Development section is repo commands — including how the candidate is graded."""
     for question in QUESTIONS:
         text = question.instructions()
-        assert "## The problem" in text
-        assert "Don't send a candidate the repo link" not in text
+        assert "## Development" not in text
         assert "To grade a candidate" not in text
-        assert "| `py/main.py` | reference solution |" not in text
-        assert "docs/answers.md" not in text
+        assert "--write-solutions" not in text
+        assert "answers.md" not in text
 
 
 def test_questions_are_the_two_the_interview_ships() -> None:

@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 PY = Path(__file__).parent.parent
 TS = PY.parent / "ts"
 PACKET = PY.parent / "docs" / "packet.md"
-README = PY.parent / "README.md"
+INSTRUCTIONS = PY.parent / "INSTRUCTIONS.md"
 BUILD = PY / "build"
 
 APP = "https://app.coderpad.io"
@@ -138,25 +138,25 @@ def typescript_files() -> dict[str, str]:
 
 # ── what the candidate is told ───────────────────────────────────────────────
 
-PAD_NOTE = (
-    "`show()` and the datasets are already in this project — open the files on the left. "
-    "Write your solution in the `main` file and press Run.\n"
-)
+PAD_NOTE = "The library is already in this project — open the files on the left. Write your solution in the `main` file and press Run.\n"
+
+# Repo commands: regenerating the answer key, running the harness, grading a candidate's
+# file. None of it means anything inside a pad, and the last of it is nobody's business.
+INTERVIEWER_SECTIONS = frozenset({"Development"})
 
 
-def _readme_sections(*titles: str) -> str:
-    """Quote whole `## ` sections of the README.
+def _for_the_candidate(readme: Path) -> str:
+    """A language README's sections, minus the ones written for whoever is running the interview.
 
-    The README is the reference a candidate actually wants: what is deliberately unspecified,
-    every call shape `show()` takes, what the datasets are. What it also contains is a map of
-    where the answer key lives and a section on how to grade them, so this takes sections by
-    name rather than the file.
+    Excluding by name rather than picking by name so that a section added to a README turns up
+    in the pad by default — the READMEs are the library's documentation, and that is the half
+    the candidate is owed.
     """
-    chunks = re.split(r"^## ", README.read_text(), flags=re.MULTILINE)[1:]
-    by_title = {chunk.split("\n", 1)[0].strip(): chunk.rstrip() for chunk in chunks}
-    if missing := [title for title in titles if title not in by_title]:
-        raise SystemExit(f"README.md has no section(s) {missing} — its headings moved, fix the QUESTIONS entries")
-    return "\n\n".join(f"## {by_title[title]}" for title in titles)
+    sections = re.split(r"^## ", readme.read_text(), flags=re.MULTILINE)[1:]
+    kept = [section for section in sections if section.split("\n", 1)[0].strip() not in INTERVIEWER_SECTIONS]
+    if not kept:
+        raise SystemExit(f"{readme} has no candidate-facing sections left — did its headings change?")
+    return "\n\n".join(f"## {section.rstrip()}" for section in kept)
 
 
 # ── the questions ────────────────────────────────────────────────────────────
@@ -178,10 +178,13 @@ class Question:
     question_id: int | None
     solution: Path
     files: Callable[[], dict[str, str]]
-    readme_sections: tuple[str, ...]
+    readme: Path
 
     def instructions(self) -> str:
-        return f"{PAD_NOTE}\n{_readme_sections(*self.readme_sections)}\n"
+        """The brief, then this language's library docs. INSTRUCTIONS.md is the problem; the
+        README is the reference for the code already sitting in the pad.
+        """
+        return f"{INSTRUCTIONS.read_text().rstrip()}\n\n{PAD_NOTE}\n{_for_the_candidate(self.readme)}\n"
 
 
 # A project question takes its environment — and so its language — from a template, which is
@@ -197,7 +200,7 @@ QUESTIONS = (
         question_id=385821,
         solution=PY / "main.py",
         files=python_files,
-        readme_sections=("The problem", "`show()` — ASCII scatter, stdlib only"),
+        readme=PY / "README.md",
     ),
     Question(
         title="k-means [ts]",
@@ -205,7 +208,7 @@ QUESTIONS = (
         question_id=385822,
         solution=TS / "main.ts",
         files=typescript_files,
-        readme_sections=("The problem", "TypeScript"),
+        readme=TS / "README.md",
     ),
 )
 
