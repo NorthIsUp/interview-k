@@ -97,3 +97,8 @@ run         = "uv version --bump minor"
 description = "Bump major version"
 dir         = "py"
 run         = "uv version --bump major"
+
+[tasks."coderpad:sync"]
+description = "Assemble the candidate bundle for CoderPad (--push uploads it, needs an API key)"
+dir         = "py"
+run         = "uv run python tools/coderpad.py {{arg(name='args', var=true, default='')}}"

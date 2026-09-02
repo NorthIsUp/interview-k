@@ -91,7 +91,7 @@ testpaths  = ["tests"]
 [tool.pyright]
 venv          = ".venv"
 venvPath      = "."
-exclude       = ["**/__pycache__", "**/.venv"]
+exclude       = ["**/__pycache__", "**/.venv", "build"]   # build/ holds the generated CoderPad bundle
 pythonVersion = "3.13"
 
 reportConstantRedefinition         = "error"
