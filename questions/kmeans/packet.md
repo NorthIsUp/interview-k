@@ -354,8 +354,8 @@ failure-mode probes, so you can *show* a failure instead of describing it.
 | `unscaled` | y spans ~1000x x — Euclidean distance sees only y until you standardize |
 | `uniform` | 100 points, **no clusters at all** — k-means still returns k of them |
 
-The points themselves are `datasets.json` at the repo root — generated once by
-`py/tools/datasets.py` (`mise run datasets`) and read by both languages, the tests, the
+The points themselves are this question's `datasets.json` — generated once by
+`py/datasets.py` (`mise run sync kmeans`) and read by both languages, the tests, the
 answer key and both pads. Nothing regenerates them, so nothing can disagree about them:
 
 ```python
@@ -414,8 +414,8 @@ in conversation; the harness will not do it for you.
 
 #### Answer key
 
-`docs/answers.md` holds the reference output — regenerate with
-`uv run python tools/answers.py > docs/answers.md`. It takes the best of 40 k-means++ restarts,
+`answers.md`, beside this file, holds the reference output — regenerate with
+`mise run sync kmeans`. It takes the best of 40 k-means++ restarts,
 so it is the global optimum rather than one run's local minimum, and it is reproducible.
 
 **Answer key — never paste it into the shared pad.**
