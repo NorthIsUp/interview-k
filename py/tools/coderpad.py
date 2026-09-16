@@ -106,7 +106,7 @@ if __name__ == "__main__":
 TS_MAIN = '''/** Your solution. Press Run to execute this file. */
 
 import {{ printClusters, show, TWENTY }} from "./index";
-import type {{ Centroid, Point }} from "./show";
+import type {{ Centroid, Point }} from "./dataviz";
 
 {stub}
 
@@ -115,7 +115,7 @@ show({{ points: TWENTY, title: "the data" }});
 '''
 
 # data.py reaches for the package it no longer lives in once the modules sit beside main.py.
-PACKAGE_IMPORT = "from interview_k.show import"
+PACKAGE_IMPORT = "from interview_k.dataviz import"
 
 # A leading underscore means the file is ours. A pad project is handed to the candidate whole,
 # so anything the interviewer keeps beside it — `_tests/`, scratch, the marking scheme — is
@@ -134,7 +134,7 @@ def python_project() -> dict[str, str]:
     # package in the pad, they are just files next to each other under src/.
     if not any(PACKAGE_IMPORT in text for text in sources.values()):
         raise SystemExit(f"no module imports {PACKAGE_IMPORT!r} any more — update PACKAGE_IMPORT")
-    files = {name: text.replace(PACKAGE_IMPORT, "from show import") for name, text in sources.items()}
+    files = {name: text.replace(PACKAGE_IMPORT, "from dataviz import") for name, text in sources.items()}
 
     stub = _stub("python", "from collections.abc import Sequence")
     # The packet's stub carries its own Sequence import; main.py already has one.
@@ -162,7 +162,7 @@ def strip_ts_extension(source: str) -> str:
     return re.sub(r'(from\s+")([^"]+)\.ts(")', r"\1\2\3", source)
 
 
-# show.ts ends with one, to run its demo when node executes the file directly.
+# dataviz.ts ends with one, to run its demo when node executes the file directly.
 TS_ENTRY_GUARD = "if (import.meta.main)"
 
 
@@ -171,7 +171,7 @@ def strip_entry_guard(source: str) -> str:
 
     TS1343 ("only allowed when '--module' is es2020...") plus TS2339 (`main` is not on
     ImportMeta), and it takes the whole project down with it — the candidate's Run button
-    fails on a line that only exists so `node src/show.ts` can show its own demo.
+    fails on a line that only exists so `node src/dataviz.ts` can show its own demo.
     """
     return "\n".join(line for line in source.splitlines() if not line.startswith(TS_ENTRY_GUARD)).rstrip() + "\n"
 

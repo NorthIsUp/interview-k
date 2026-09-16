@@ -1,6 +1,6 @@
 # interview-k — Python
 
-The candidate-facing half is `src/interview_k/`: `show.py` and `data.py`, stdlib only.
+The candidate-facing half is `src/interview_k/`: `dataviz.py` and `data.py`, stdlib only.
 
 ## `show()` — ASCII scatter, stdlib only
 

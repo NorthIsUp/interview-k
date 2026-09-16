@@ -49,16 +49,16 @@ def _run_command(project: dict[str, str]) -> list[str]:
 def test_python_project_has_what_the_template_boots() -> None:
     project = python_project()
     # requirements.txt is not decoration: the template's initCommand pip-installs from it.
-    assert {".cpad", "requirements.txt", "src/main.py", "src/show.py", "src/data.py", "src/dataviz.py"} == set(project)
+    assert {".cpad", "requirements.txt", "src/main.py", "src/data.py", "src/dataviz.py"} == set(project)
     assert _run_command(project) == ["python", "src/main.py"]
     # Flattened out of the package: src/ is the import root, so data.py imports its sibling.
-    assert "from interview_k.show import" not in project["src/data.py"]
-    assert "from show import" in project["src/data.py"]
+    assert "from interview_k.dataviz import" not in project["src/data.py"]
+    assert "from dataviz import" in project["src/data.py"]
 
 
 def test_typescript_project_has_what_the_template_boots() -> None:
     project = typescript_project()
-    assert {".cpad", "package.json", "src/main.ts", "src/show.ts", "src/data.ts", "src/random.ts"} <= set(project)
+    assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/data.ts", "src/random.ts"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
 
@@ -97,7 +97,7 @@ def test_the_python_project_has_no_package_imports_left() -> None:
 def test_no_import_meta_reaches_the_pad() -> None:
     """ts-node compiles the project as CommonJS, where `import.meta` is TS1343 + TS2339.
 
-    One line of it in show.ts fails the whole Run, so the guard comes off on the way in.
+    One line of it in dataviz.ts fails the whole Run, so the guard comes off on the way in.
     """
     for name, text in typescript_project().items():
         assert "import.meta" not in text, f"{name} would not compile in a pad"
@@ -106,7 +106,7 @@ def test_no_import_meta_reaches_the_pad() -> None:
 def test_ts_specifiers_lose_their_extension() -> None:
     """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
     assert strip_ts_extension('from "./random.ts";') == 'from "./random";'
-    assert 'from "./random"' in typescript_project()["src/show.ts"]
+    assert 'from "./random"' in typescript_project()["src/dataviz.ts"]
 
 
 def test_python_project_runs_its_run_target(tmp_path: Path) -> None:

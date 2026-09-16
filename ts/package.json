@@ -9,7 +9,7 @@
   "scripts": {
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "demo": "node src/show.ts"
+    "demo": "node src/dataviz.ts"
   },
   "devDependencies": {
     "@types/node": "^24",

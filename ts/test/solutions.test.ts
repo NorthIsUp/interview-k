@@ -17,7 +17,7 @@ import test from "node:test";
 
 import { kmeans } from "../main.ts";
 import { DATASETS, TWENTY } from "../src/data.ts";
-import type { Centroid, Point } from "../src/show.ts";
+import type { Centroid, Point } from "../src/dataviz.ts";
 
 interface Fixture {
   k: number;

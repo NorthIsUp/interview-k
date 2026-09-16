@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { DATASETS, TWENTY } from "../src/data.ts";
-import { show, type Centroid, type Point } from "../src/show.ts";
+import { show, type Centroid, type Point } from "../src/dataviz.ts";
 import { capture } from "./capture.ts";
 
 interface Fixture {

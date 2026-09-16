@@ -20,7 +20,7 @@
  */
 
 import { Random, round } from "./random.ts";
-import type { Centroid, Point } from "./show.ts";
+import type { Centroid, Point } from "./dataviz.ts";
 
 export const TWENTY: Point[] = [
   [10, 15],

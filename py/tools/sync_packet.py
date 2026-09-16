@@ -15,7 +15,7 @@ from pathlib import Path
 
 PY = Path(__file__).parent.parent
 PACKET = PY.parent / "docs" / "packet.md"
-PASTE_IMPORT = ("from interview_k.show import Centroid, Point", "from kmeans_show import Centroid, Point")
+PASTE_IMPORT = ("from interview_k.dataviz import Centroid, Point", "from kmeans_show import Centroid, Point")
 
 
 def embed(text: str, marker: str, source: str) -> str:
@@ -25,7 +25,7 @@ def embed(text: str, marker: str, source: str) -> str:
 
 
 def main() -> int:
-    show = (PY / "src/interview_k/show.py").read_text().rstrip()
+    show = (PY / "src/interview_k/dataviz.py").read_text().rstrip()
     data = (PY / "src/interview_k/data.py").read_text().rstrip().replace(*PASTE_IMPORT)
 
     packet = PACKET.read_text()

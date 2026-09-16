@@ -25,7 +25,7 @@ from main import kmeans
 from solutions import ANSWERS, K
 
 if TYPE_CHECKING:
-    from interview_k.show import Centroid, Point
+    from interview_k.dataviz import Centroid, Point
 
 Clusters = list[tuple["Centroid", list["Point"]]]
 Solved = tuple[str, list["Point"], Clusters]

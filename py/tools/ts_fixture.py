@@ -8,7 +8,7 @@ also carries the answer key, which is what holds `ts/main.ts` to the same cluste
 reaches rather than merely to a converged answer of its own.
 
 Run as `-m` so that `py/` is on the path and `solutions` imports; running the file by path
-puts `tools/` there instead. Regenerate whenever data.py, show.py or solutions.py changes;
+puts `tools/` there instead. Regenerate whenever data.py, dataviz.py or solutions.py changes;
 a TS test failure afterwards means the port drifted, not that the fixture is stale.
 """
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from interview_k.data import DATASETS, TWENTY
-from interview_k.show import Centroid, Point, show
+from interview_k.dataviz import Centroid, Point, show
 from solutions import ANSWERS, K
 
 FIXTURE = Path(__file__).parent.parent.parent / "ts" / "test" / "parity.json"

@@ -9,7 +9,7 @@ authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]
 dependencies    = []
 
 [project.scripts]
-interview-k = "interview_k.show:_demo"
+interview-k = "interview_k.dataviz:_demo"
 
 [build-system]
 requires      = ["uv_build>=0.8,<0.9"]

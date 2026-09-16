@@ -16,8 +16,7 @@ import pathlib
 import random
 
 from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
-from interview_k.dataviz import print_clusters
-from interview_k.show import Centroid, Point, show
+from interview_k.dataviz import Centroid, Point, print_clusters, show
 
 K = 3
 N_INIT = 40
@@ -123,7 +122,7 @@ def write_solutions(path: pathlib.Path) -> None:
         "from typing import TYPE_CHECKING",
         "",
         "if TYPE_CHECKING:",
-        "    from interview_k.show import Centroid, Point",
+        "    from interview_k.dataviz import Centroid, Point",
         "",
         "K = 3",
         "",

@@ -61,7 +61,7 @@ lookalike.
 npm ci
 node --test test/*.test.ts   # the whole suite
 npx tsc --noEmit
-node src/show.ts             # the show() demo
+node src/dataviz.ts             # the show() demo
 ```
 
 The parity fixture is generated on the Python side: `uv run python -m tools.ts_fixture`

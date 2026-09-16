@@ -22,7 +22,7 @@ import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from interview_k.show import Centroid, Point
+    from interview_k.dataviz import Centroid, Point
 
 TWENTY: list[Point] = [
     (10, 15),

@@ -8,7 +8,7 @@
  */
 
 import { Random } from "./src/random.ts";
-import type { Centroid, Point } from "./src/show.ts";
+import type { Centroid, Point } from "./src/dataviz.ts";
 
 const N_INIT = 10;
 

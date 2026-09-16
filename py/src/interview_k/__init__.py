@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from interview_k.data import BLOBS, DATASETS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
-from interview_k.show import MARKS, Centroid, Point, show
+from interview_k.dataviz import MARKS, Centroid, Point, print_clusters, show
 
 __all__ = [
     "BLOBS",
@@ -17,5 +17,6 @@ __all__ = [
     "UNSCALED",
     "Centroid",
     "Point",
+    "print_clusters",
     "show",
 ]

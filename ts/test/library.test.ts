@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DATASETS, TWENTY, UNIFORM } from "../src/data.ts";
-import { show, type Centroid, type Point } from "../src/show.ts";
+import { show, type Centroid, type Point } from "../src/dataviz.ts";
 import { capture } from "./capture.ts";
 
 const SQUARE: Point[] = [

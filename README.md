@@ -18,8 +18,8 @@ language documents its own half:
 |---|---|
 | `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
 | `coderpad.toml` | which question in the bank is ours; maintained by `coderpad:sync` |
-| `py/src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
-| `ts/src/` | `show.ts`, `data.ts` — the same two modules, ported |
+| `py/src/interview_k/` | `dataviz.py`, `data.py` — the candidate-facing half |
+| `ts/src/` | `dataviz.ts`, `data.ts` — the same two modules, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
 | `docs/answers.md` | reference answers, generated |
 | `py/solutions.py` | expected centroids / sizes / inertia per dataset |

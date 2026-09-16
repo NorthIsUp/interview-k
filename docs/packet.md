@@ -102,7 +102,7 @@ data, 100 seeds per cell:
 Survives testing, breaks in production. Hand them `TIGHT` once their solution works. Naming
 _where_ it breaks is a 4; naming that it depends on scale is a 4 you should hire.
 
-**Plotting helper** (source at `src/interview_k/show.py`). Stdlib only, takes `Iterable[Point]`,
+**Plotting helper** (source at `src/interview_k/dataviz.py`). Stdlib only, takes `Iterable[Point]`,
 and drops non-finite coordinates with a count instead of raising — so a `nan` centroid still
 plots and reports `1 point(s) unusable`.
 
@@ -113,7 +113,11 @@ show(clusters, C)  # centroids overlaid as their group's digit
 ```
 
 ```python
-"""ASCII scatter plot for the k-means interview. Stdlib only.
+"""Looking at an answer: the ASCII scatter plot and the one-line-per-cluster dump.
+
+`dataviz` is the name the brief gives the candidate, and the pad puts this module beside
+their solution rather than pasting it into it.
+
 
     show(points=pts)              -> every point is '·'
     show(clusters)                -> one mark per group, in list order
@@ -248,6 +252,18 @@ def show(  # ruff: ignore[too-many-arguments] — width/height/title are plottin
     print(f"┌{rule}")
     print("\n".join("│" + "".join(row) for row in grid))
     print(f"└{rule}  " + "  ·  ".join(notes))
+
+
+def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
+    """One line per cluster: `centroid: points`.
+
+    Sorted so two runs are diffable — cluster order and point order are not part of the
+    contract, and sorting inside kmeans() would be a misread of it.
+    """
+    for centroid, pts in sorted(clusters):
+        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
+        cx, cy = centroid
+        print(f"({cx:.4g}, {cy:.4g}): {coords}")
 
 
 def _demo() -> None:
