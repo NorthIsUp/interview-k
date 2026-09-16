@@ -90,10 +90,17 @@ def _stub(fence: str, opener: str) -> str:
 # before kmeans() returns anything.
 PY_MAIN = '''"""Your solution. Press Run to execute this file."""
 
+import json
 from collections.abc import Sequence
+from pathlib import Path
 
-from data import BLOBS, DATASETS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
 from dataviz import print_clusters, show
+
+DATASETS = {{
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads(Path(__file__).with_name("datasets.json").read_text()).items()
+}}
+TWENTY = DATASETS["TWENTY"]
 
 {stub}
 
@@ -114,8 +121,8 @@ show({{ points: TWENTY, title: "the data" }});
 // once kmeans works:  const clusters = kmeans(TWENTY, 3); printClusters(clusters); show(clusters);
 """
 
-# data.py reaches for the package it no longer lives in once the modules sit beside main.py.
-PACKAGE_IMPORT = "from interview_k.dataviz import"
+# The datasets are data, not code: both pads get the same JSON the repo reads.
+DATASETS_JSON = PY.parent / "datasets.json"
 
 # A leading underscore means the file is ours. A pad project is handed to the candidate whole,
 # so anything the interviewer keeps beside it — `_tests/`, scratch, the marking scheme — is
@@ -129,12 +136,7 @@ def shipped(project: dict[str, str]) -> dict[str, str]:
 
 def python_project() -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    sources = {f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py")}
-    # Every module that reaches for the package has to reach sideways instead; nothing is a
-    # package in the pad, they are just files next to each other under src/.
-    if not any(PACKAGE_IMPORT in text for text in sources.values()):
-        raise SystemExit(f"no module imports {PACKAGE_IMPORT!r} any more — update PACKAGE_IMPORT")
-    files = {name: text.replace(PACKAGE_IMPORT, "from dataviz import") for name, text in sources.items()}
+    files = {f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py")}
 
     stub = _stub("python", "from collections.abc import Sequence")
     # The packet's stub carries its own Sequence import; main.py already has one.
@@ -147,12 +149,13 @@ def python_project() -> dict[str, str]:
         # The template boots with `pip3 install -r requirements.txt`; without it that fails.
         "requirements.txt": "# The interview is stdlib only.\n",
         **files,
+        "src/datasets.json": DATASETS_JSON.read_text(),
         "src/main.py": main,
     })
 
 
 def strip_ts_extension(source: str) -> str:
-    """The repo writes `./random.ts` because node's own type stripping demands the exact path.
+    """The repo writes `./dataviz.ts` because node's own type stripping demands the exact path.
 
     A pad compiles with ts-node, which rejects it — `TS5097: An import path can only end with a
     '.ts' extension when 'allowImportingTsExtensions' is enabled` — and the pad owns tsconfig.
@@ -174,13 +177,26 @@ def strip_entry_guard(source: str) -> str:
     return "\n".join(line for line in source.splitlines() if not line.startswith(TS_ENTRY_GUARD)).rstrip() + "\n"
 
 
+def flatten_json_import(source: str) -> str:
+    """In the pad there is no ts/ and py/ to sit between: datasets.json is beside index.ts.
+
+    `import.meta` goes with it — a pad compiles CommonJS, where it does not exist — so the
+    path becomes the plain string the Run button's working directory resolves.
+    """
+    return source.replace('new URL("../../datasets.json", import.meta.url)', '"src/datasets.json"')
+
+
 def typescript_project() -> dict[str, str]:
-    files = {f"src/{path.name}": strip_entry_guard(strip_ts_extension(path.read_text())) for path in (TS / "src").glob("*.ts")}
+    files = {
+        f"src/{path.name}": flatten_json_import(strip_entry_guard(strip_ts_extension(path.read_text())))
+        for path in (TS / "src").glob("*.ts")
+    }
     manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
     return shipped({
         ".cpad": _cpad("npm run main"),
         "package.json": json.dumps(manifest, indent=2) + "\n",
         **files,
+        "src/datasets.json": DATASETS_JSON.read_text(),
         "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
     })
 

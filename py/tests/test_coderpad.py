@@ -49,16 +49,16 @@ def _run_command(project: dict[str, str]) -> list[str]:
 def test_python_project_has_what_the_template_boots() -> None:
     project = python_project()
     # requirements.txt is not decoration: the template's initCommand pip-installs from it.
-    assert {".cpad", "requirements.txt", "src/main.py", "src/data.py", "src/dataviz.py"} == set(project)
+    assert {".cpad", "requirements.txt", "src/main.py", "src/datasets.json", "src/dataviz.py"} == set(project)
     assert _run_command(project) == ["python", "src/main.py"]
-    # Flattened out of the package: src/ is the import root, so data.py imports its sibling.
-    assert "from interview_k.dataviz import" not in project["src/data.py"]
-    assert "from dataviz import" in project["src/data.py"]
+    # The points are data, and main.py reads them from the file sitting beside it.
+    assert "datasets.json" in project["src/main.py"]
+    assert set(json.loads(project["src/datasets.json"])) == {"TWENTY", "BLOBS", "TIGHT", "LOPSIDED", "ELONGATED", "UNSCALED", "UNIFORM"}
 
 
 def test_typescript_project_has_what_the_template_boots() -> None:
     project = typescript_project()
-    assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/data.ts", "src/random.ts"} <= set(project)
+    assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/index.ts", "src/datasets.json"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
 
@@ -105,8 +105,8 @@ def test_no_import_meta_reaches_the_pad() -> None:
 
 def test_ts_specifiers_lose_their_extension() -> None:
     """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
-    assert strip_ts_extension('from "./random.ts";') == 'from "./random";'
-    assert 'from "./random"' in typescript_project()["src/dataviz.ts"]
+    assert strip_ts_extension('from "./dataviz.ts";') == 'from "./dataviz";'
+    assert 'from "./dataviz"' in typescript_project()["src/index.ts"]
 
 
 def test_python_project_runs_its_run_target(tmp_path: Path) -> None:

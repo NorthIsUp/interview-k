@@ -18,8 +18,10 @@ language documents its own half:
 |---|---|
 | `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
 | `coderpad.toml` | which question in the bank is ours; maintained by `coderpad:sync` |
-| `py/src/interview_k/` | `dataviz.py`, `data.py` — the candidate-facing half |
-| `ts/src/` | `dataviz.ts`, `data.ts` — the same two modules, ported |
+| `py/src/interview_k/` | `dataviz.py` — the candidate-facing half |
+| `datasets.json` | the seven datasets, generated; both languages read it |
+| `py/tools/datasets.py` | regenerates `datasets.json` (`mise run datasets`) |
+| `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
 | `docs/answers.md` | reference answers, generated |
 | `py/solutions.py` | expected centroids / sizes / inertia per dataset |
@@ -27,7 +29,7 @@ language documents its own half:
 | `ts/main.ts` | the same solution, ported — same seeds, same clusters |
 | `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
 | `py/tools/sync_packet.py` | re-embeds library source into the packet |
-| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (datasets, renders, answer key) |
+| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (renders, answer key) |
 | `py/tools/coderpad.py` | builds both CoderPad projects; `--push` syncs them to the question bank |
 | `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
 | `ts/test/solutions.test.ts` | holds `main.ts` to the same answers |

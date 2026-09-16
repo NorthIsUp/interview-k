@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATASETS, TWENTY, UNIFORM } from "../src/data.ts";
+import { DATASETS, TWENTY, UNIFORM } from "../src/index.ts";
 import { show, type Centroid, type Point } from "../src/dataviz.ts";
 import { capture } from "./capture.ts";
 
@@ -73,7 +73,7 @@ test("TWENTY is hand-checkable", () => {
 });
 
 test("datasets are the documented size", () => {
-  const sizes: Record<string, number> = { blobs: 1000, tight: 1000, lopsided: 1000, elongated: 1000, unscaled: 1000, uniform: 100 };
+  const sizes: Record<string, number> = { TWENTY: 20, BLOBS: 1000, TIGHT: 1000, LOPSIDED: 1000, ELONGATED: 1000, UNSCALED: 1000, UNIFORM: 100 };
   assert.deepEqual(Object.keys(DATASETS).sort(), Object.keys(sizes).sort());
   for (const [name, points] of Object.entries(DATASETS)) assert.equal(points.length, sizes[name], name);
 });
@@ -97,7 +97,7 @@ test("datasets have distinct shapes", () => {
     return [Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
   };
   const spans = Object.fromEntries(Object.entries(DATASETS).map(([name, points]) => [name, span(points)]));
-  assert.ok(spans.unscaled![1] / spans.unscaled![0] > 100); // y dwarfs x
-  assert.ok(spans.tight![0] < 10); // small integer range
-  assert.ok(spans.elongated![0] > spans.elongated![1]); // wider than tall
+  assert.ok(spans.UNSCALED![1] / spans.UNSCALED![0] > 100); // y dwarfs x
+  assert.ok(spans.TIGHT![0] < 10); // small integer range
+  assert.ok(spans.ELONGATED![0] > spans.ELONGATED![1]); // wider than tall
 });

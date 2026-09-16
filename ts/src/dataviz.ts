@@ -30,7 +30,14 @@
  * type.
  */
 
-import { round } from "./random.ts";
+/** Python's `round`: half-to-even, unlike JS's half-up `Math.round`. */
+function round(x: number): number {
+  const floor = Math.floor(x);
+  const frac = x - floor;
+  if (frac > 0.5) return floor + 1;
+  if (frac < 0.5) return floor;
+  return floor % 2 === 0 ? floor : floor + 1;
+}
 
 export const MARKS = "●▲■◆★✚✦❖"; // if your terminal misaligns these, use "oxv+*#@%"
 const UNLABELED = "·";

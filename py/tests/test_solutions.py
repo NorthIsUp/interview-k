@@ -15,30 +15,25 @@ about quality rather than a statement about correctness.
 
 from __future__ import annotations
 
+import json
 import math
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
-from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
 from main import kmeans
 from solutions import ANSWERS, K
 
-if TYPE_CHECKING:
-    from interview_k.dataviz import Centroid, Point
-
-Clusters = list[tuple["Centroid", list["Point"]]]
-Solved = tuple[str, list["Point"], Clusters]
+# spelled out rather than imported, so grading a candidate's main.py needs nothing but this file
+Point = tuple[int, int]
+Centroid = tuple[float, float]
+Clusters = list[tuple[Centroid, list[Point]]]
+Solved = tuple[str, list[Point], Clusters]
 
 
 DATASETS: dict[str, list[Point]] = {
-    "TWENTY": TWENTY,
-    "BLOBS": BLOBS,
-    "TIGHT": TIGHT,
-    "LOPSIDED": LOPSIDED,
-    "ELONGATED": ELONGATED,
-    "UNSCALED": UNSCALED,
-    "UNIFORM": UNIFORM,
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads((Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
 }
 
 

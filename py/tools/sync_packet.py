@@ -3,8 +3,9 @@
     uv run python tools/sync_packet.py   # from py/
 
 The packet hands candidates code to paste into a CodePair pad, where there is no
-installed package — so the embedded copy of data.py imports from the pasted module
-rather than from `interview_k`. That rewrite happens here, not by hand.
+installed package — so the embedded copy imports from the pasted module rather than from
+`interview_k`. That rewrite happens here, not by hand. The datasets are not embedded:
+they are datasets.json, and a thousand points is not something anyone reads in a packet.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from pathlib import Path
 
 PY = Path(__file__).parent.parent
 PACKET = PY.parent / "docs" / "packet.md"
-PASTE_IMPORT = ("from interview_k.dataviz import Centroid, Point", "from kmeans_show import Centroid, Point")
+PASTE_IMPORT = ("from interview_k.dataviz import Centroid, Point", "from dataviz import Centroid, Point")
 
 
 def embed(text: str, marker: str, source: str) -> str:
@@ -25,12 +26,10 @@ def embed(text: str, marker: str, source: str) -> str:
 
 
 def main() -> int:
-    show = (PY / "src/interview_k/dataviz.py").read_text().rstrip()
-    data = (PY / "src/interview_k/data.py").read_text().rstrip().replace(*PASTE_IMPORT)
+    show = (PY / "src/interview_k/dataviz.py").read_text().rstrip().replace(*PASTE_IMPORT)
 
     packet = PACKET.read_text()
-    packet = embed(packet, '```python\n"""ASCII scatter', show)
-    packet = embed(packet, '```python\n"""Datasets for', data)
+    packet = embed(packet, '```python\n"""Looking at an answer', show)
     PACKET.write_text(packet)
 
     blocks = re.findall(r"```python\n(.*?)```", packet, re.DOTALL)

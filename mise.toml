@@ -34,6 +34,11 @@ description = "Build wheel + sdist"
 dir         = "py"
 run         = "uv build"
 
+[tasks.datasets]
+description = "Regenerate datasets.json — both languages read it"
+dir         = "py"
+run         = "uv run python tools/datasets.py"
+
 [tasks."py:fixture"]
 description = "Regenerate the parity fixture the TS port is tested against"
 dir         = "py"

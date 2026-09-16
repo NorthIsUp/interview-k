@@ -12,10 +12,8 @@ optima rather than one run's local minimum. Regenerate with:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from interview_k.dataviz import Centroid, Point
+Point = tuple[int, int]
+Centroid = tuple[float, float]
 
 K = 3
 

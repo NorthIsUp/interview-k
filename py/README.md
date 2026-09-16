@@ -1,6 +1,6 @@
 # interview-k — Python
 
-The candidate-facing half is `src/interview_k/`: `dataviz.py` and `data.py`, stdlib only.
+The candidate-facing half is `src/interview_k/dataviz.py` plus `datasets.json`, stdlib only.
 
 ## `show()` — ASCII scatter, stdlib only
 
@@ -46,14 +46,16 @@ order and point order are not part of the contract — sorting inside `kmeans` i
 
 ## The datasets
 
-`data.py` generates seven of them once at import and exports each as a
-constant — `TWENTY`, `BLOBS`, `TIGHT`, `LOPSIDED`, `ELONGATED`, `UNSCALED`,
-`UNIFORM` — plus `DATASETS`, keyed by name. Integer coordinates throughout, and
-deterministic: the same seed gives the same points every run.
+Seven of them, in `datasets.json` at the repo root: `TWENTY`, `BLOBS`, `TIGHT`,
+`LOPSIDED`, `ELONGATED`, `UNSCALED`, `UNIFORM`. Integer coordinates throughout.
+No import and no package — the TypeScript side reads the same file:
 
 ```python
-from interview_k.data import BLOBS, DATASETS, TWENTY
+DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
 ```
+
+`py/tools/datasets.py` (`mise run datasets`) regenerates the file and holds the
+generators, plus the note on how each set breaks k-means.
 
 ## Development
 

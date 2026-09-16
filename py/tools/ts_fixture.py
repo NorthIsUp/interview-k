@@ -24,37 +24,34 @@ from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from interview_k.data import DATASETS, TWENTY
 from interview_k.dataviz import Centroid, Point, show
 from solutions import ANSWERS, K
 
 FIXTURE = Path(__file__).parent.parent.parent / "ts" / "test" / "parity.json"
 
+DATASETS: dict[str, list[Point]] = {
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads((Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
+}
+TWENTY = DATASETS["TWENTY"]
+
 SQUARE: list[Point] = [(0, 0), (0, 1), (1, 0), (1, 1)]
 
 
 # The wire shape, declared once so the TS-side `interface Fixture` has something to match.
-class DatasetFixture(TypedDict):
-    n: int
-    first: list[int]
-    last: list[int]
-    sha256: str
-
-
 class AnswerFixture(TypedDict):
-    """A digest rather than the partition itself, which would be every point over again.
+    """What the TS side is held to: the reference optimum's cost, not its exact partition.
 
-    It detects exactly what spelling out the clusters would — any point landing in a
-    different group changes the hash — for a hundredth of the file. The centroids stay
-    literal because they are compared to a tolerance, which a hash cannot do.
+    The two languages seed k-means++ from different generators now that the datasets are
+    read rather than regenerated, so they reach equally valid local minima. Inertia is the
+    thing that is actually claimed — "as good as the key" — and it compares across both.
     """
 
-    partition: str
+    inertia: float
     centroids: list[list[float]]
 
 
 class Fixture(TypedDict):
-    datasets: dict[str, DatasetFixture]
     renders: dict[str, str]
     k: int
     answers: dict[str, AnswerFixture]
@@ -85,29 +82,25 @@ def main() -> int:
     answers: dict[str, AnswerFixture] = {}
     for name, clusters in ANSWERS.items():
         groups = normalised(clusters)
-        answers[name.lower()] = {
-            "partition": hashlib.sha256("|".join(digest(points) for _, points in groups).encode()).hexdigest(),
+        answers[name] = {
+            "inertia": sum((x - cx) ** 2 + (y - cy) ** 2 for (cx, cy), points in groups for x, y in points),
             "centroids": [[centroid[0], centroid[1]] for centroid, _ in groups],
         }
     fixture: Fixture = {
-        "datasets": {
-            name: {"n": len(points), "first": list(points[0]), "last": list(points[-1]), "sha256": digest(points)}
-            for name, points in ({"twenty": TWENTY} | DATASETS).items()
-        },
         "renders": {
             "twenty": rendered(lambda: show(points=TWENTY, width=40, height=12, title="twenty")),
             "two_groups": rendered(lambda: show([SQUARE[:2], SQUARE[2:]], [(0.0, 0.5), (1.0, 0.5)], width=20, height=5)),
             "nan_centroid": rendered(lambda: show([SQUARE], [(float("nan"), 0.0)], width=20, height=5)),
             "empty": rendered(lambda: show([], width=20, height=5)),
             "identical": rendered(lambda: show(points=[(2, 2)] * 5, width=20, height=5)),
-            "blobs": rendered(lambda: show(points=DATASETS["blobs"], width=60, height=16, title="blobs")),
+            "blobs": rendered(lambda: show(points=DATASETS["BLOBS"], width=60, height=16, title="blobs")),
         },
         "k": K,
         "answers": answers,
     }
 
     FIXTURE.write_text(json.dumps(fixture, indent=2) + "\n")
-    print(f"wrote {FIXTURE} — {len(fixture['datasets'])} datasets, {len(fixture['renders'])} renders, {len(fixture['answers'])} answers")
+    print(f"wrote {FIXTURE} — {len(fixture['renders'])} renders, {len(fixture['answers'])} answers")
     return 0
 
 

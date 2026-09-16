@@ -12,10 +12,10 @@ which is what makes a candidate's output diffable against it.
 
 from __future__ import annotations
 
+import json
 import pathlib
 import random
 
-from interview_k.data import BLOBS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
 from interview_k.dataviz import Centroid, Point, print_clusters, show
 
 K = 3
@@ -23,15 +23,11 @@ N_INIT = 40
 PER_ROW = 6  # points per line in the generated solutions.py
 SEED = 0
 
-_ALL: list[tuple[str, list[Point]]] = [
-    ("TWENTY", TWENTY),
-    ("BLOBS", BLOBS),
-    ("TIGHT", TIGHT),
-    ("LOPSIDED", LOPSIDED),
-    ("ELONGATED", ELONGATED),
-    ("UNSCALED", UNSCALED),
-    ("UNIFORM", UNIFORM),
-]
+DATASETS: dict[str, list[Point]] = {
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads((pathlib.Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
+}
+_ALL: list[tuple[str, list[Point]]] = list(DATASETS.items())
 
 
 def _inertia(clusters: list[tuple[Centroid, list[Point]]]) -> float:
@@ -119,10 +115,8 @@ def write_solutions(path: pathlib.Path) -> None:
         "",
         "from __future__ import annotations",
         "",
-        "from typing import TYPE_CHECKING",
-        "",
-        "if TYPE_CHECKING:",
-        "    from interview_k.dataviz import Centroid, Point",
+        "Point = tuple[int, int]",
+        "Centroid = tuple[float, float]",
         "",
         "K = 3",
         "",
@@ -160,17 +154,18 @@ if __name__ == "__main__":
 
     print("## TWENTY — full expected output\n")
     print("```text")
-    print_clusters(solve(TWENTY, 3))
+    print_clusters(solve(DATASETS["TWENTY"], 3))
     print("```\n")
 
     print("## Generated sets\n")
     print("Centroids only — the point lists are 1000 long. Compare these and the inertia.\n")
-    for name, pts in (("BLOBS", BLOBS), ("TIGHT", TIGHT), ("LOPSIDED", LOPSIDED), ("ELONGATED", ELONGATED), ("UNSCALED", UNSCALED)):
+    for name in ("BLOBS", "TIGHT", "LOPSIDED", "ELONGATED", "UNSCALED"):
+        pts = DATASETS[name]
         _summary(name, pts, 3)
 
     print("## ELONGATED — the failure, drawn\n")
     print("```text")
-    elongated_answer = solve(ELONGATED, 3)
+    elongated_answer = solve(DATASETS["ELONGATED"], 3)
     show(
         [pts for _, pts in elongated_answer],
         [c for c, _ in elongated_answer],
@@ -183,4 +178,4 @@ if __name__ == "__main__":
     print("## UNIFORM — there is no right answer\n")
     print("Inertia falls monotonically with k on structureless data, so it cannot choose k.\n")
     for k in (2, 3, 5, 8):
-        _summary("UNIFORM", UNIFORM, k)
+        _summary("UNIFORM", DATASETS["UNIFORM"], k)

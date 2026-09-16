@@ -1,14 +1,41 @@
 /**
  * Reference solution — what a candidate should end up with. NOT for the candidate.
  *
- * A port of `py/main.py`, down to the order it draws random numbers in. `Random` is
- * CPython's MT19937 bit-for-bit, so seeding both with 0 makes the two languages take the
- * same k-means++ seeds and land on the same clusters — `test/solutions.test.ts` checks
- * that against the answer key rather than trusting the claim.
+ * A port of `py/main.py`. It does not reproduce CPython's random number stream — the two
+ * languages seed k-means++ differently and converge on the same optimum anyway, which is
+ * what `test/solutions.test.ts` checks against the answer key.
  */
 
-import { Random } from "./src/random.ts";
 import type { Centroid, Point } from "./src/dataviz.ts";
+
+/**
+ * Deterministic and tiny: a 32-bit LCG (Numerical Recipes), enough to seed k-means++.
+ *
+ * The restarts, not the generator, are what make the answer good — see kmeans() below.
+ */
+class Rng {
+  #state: number;
+  constructor(seed: number) {
+    this.#state = seed >>> 0;
+  }
+  #next(): number {
+    this.#state = (Math.imul(this.#state, 1664525) + 1013904223) >>> 0;
+    return this.#state / 2 ** 32;
+  }
+  choice<T>(items: readonly T[]): T {
+    return items[Math.floor(this.#next() * items.length)]!;
+  }
+  /** One draw weighted by `weights` — the slice of Python's `random.choices` we use. */
+  choices<T>(items: readonly T[], weights: readonly number[]): T[] {
+    const total = weights.reduce((a, b) => a + b, 0);
+    let target = this.#next() * total;
+    for (let i = 0; i < items.length; i++) {
+      target -= weights[i]!;
+      if (target <= 0) return [items[i]!];
+    }
+    return [items[items.length - 1]!];
+  }
+}
 
 const N_INIT = 10;
 
@@ -35,7 +62,7 @@ function assign(points: readonly Point[], centers: readonly Centroid[]): Point[]
   return groups;
 }
 
-function once(points: readonly Point[], k: number, rng: Random): Cluster[] {
+function once(points: readonly Point[], k: number, rng: Rng): Cluster[] {
   // k-means++: seed each new centre far from the ones already chosen
   const centers: Centroid[] = [rng.choice(points)];
   while (centers.length < k) {
@@ -63,7 +90,7 @@ const inertia = (clusters: readonly Cluster[]): number =>
 
 /** Cluster points into k groups. Best of N_INIT restarts by inertia. */
 export function kmeans(points: readonly Point[], k: number): Cluster[] {
-  const rng = new Random(0);
+  const rng = new Rng(0);
   let best: Cluster[] | null = null;
   for (let i = 0; i < N_INIT; i++) {
     const candidate = once(points, k, rng);
