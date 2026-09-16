@@ -162,9 +162,7 @@ def _terminal_box(width: int, height: int) -> tuple[int, int]:
     )
 
 
-def _projection(
-    points: list[Centroid], width: int, height: int
-) -> Callable[[Centroid], Cell]:
+def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Centroid], Cell]:
     """Map data coordinates onto grid cells, stretching each axis to fill the box."""
     x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
     y0, y1 = min(y for _, y in points), max(y for _, y in points)
@@ -214,11 +212,7 @@ def show(
         grid[row][col] = str(index % 10)
 
     rule = "─" * width
-    notes = [
-        note
-        for note in (title, f"{dropped} point(s) unusable" if dropped else "")
-        if note
-    ]
+    notes = [note for note in (title, f"{dropped} point(s) unusable" if dropped else "") if note]
     print(f"┌{rule}")
     print("\n".join("│" + "".join(row) for row in grid))
     print(f"└{rule}  " + "  ·  ".join(notes))
@@ -262,9 +256,7 @@ def _demo() -> None:
     else:
         rng = np.random.default_rng(1)
         arr = rng.normal(0, 20, (80, 2))
-        pts: list[Point] = [
-            (round(x), round(y)) for x, y in arr
-        ]  # ndarray rows -> Point
+        pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
         mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
         show(
             *mid,
@@ -277,6 +269,7 @@ def _demo() -> None:
 if __name__ == "__main__":
     _demo()
 ```
+
 
 
 
@@ -476,6 +469,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 ```
+
 
 
 

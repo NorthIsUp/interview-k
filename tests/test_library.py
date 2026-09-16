@@ -10,8 +10,7 @@ if TYPE_CHECKING:
     import pytest
 
 DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points]
-    for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
+    name: [(x, y) for x, y in points] for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
 }
 TWENTY = DATASETS["TWENTY"]
 UNIFORM = DATASETS["UNIFORM"]
