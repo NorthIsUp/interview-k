@@ -1,21 +1,7 @@
-"""k-means interview helpers."""
+"""k-means interview helpers. The datasets are datasets.json, not an import."""
 
 from __future__ import annotations
 
-from interview_k.data import BLOBS, DATASETS, ELONGATED, LOPSIDED, TIGHT, TWENTY, UNIFORM, UNSCALED
-from interview_k.show import MARKS, Centroid, Point, show
+from interview_k.dataviz import MARKS, Centroid, Point, show
 
-__all__ = [
-    "BLOBS",
-    "DATASETS",
-    "ELONGATED",
-    "LOPSIDED",
-    "MARKS",
-    "TIGHT",
-    "TWENTY",
-    "UNIFORM",
-    "UNSCALED",
-    "Centroid",
-    "Point",
-    "show",
-]
+__all__ = ["MARKS", "Centroid", "Point", "show"]

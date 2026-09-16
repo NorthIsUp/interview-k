@@ -1,12 +1,12 @@
-"""Datasets for the k-means interview. Stdlib only, deterministic, integer coordinates throughout.
+"""Generate datasets.json for the k-means interview. Stdlib only, deterministic, integer coordinates.
 
 TWENTY is a literal you can read at a glance and check by hand: 20 integer points in
 [0, 100], three obvious clusters of 7/6/7. The generated sets each break k-means a
 different way, so they double as the failure-mode probes — 1000 points each except
 uniform, which is 100:
 
-Each is generated once at import and exported as a constant: BLOBS, TIGHT, and so on.
-The functions remain if you want a different seed.
+Run this (`mise run datasets`) to regenerate datasets.json, which is what everything else
+reads. Nothing imports this module; the JSON is the interface.
 
     blobs       three well-separated clusters — the baseline that should just work
     tight       same shape on a small integer range — int centroids truncate here
@@ -18,11 +18,15 @@ The functions remain if you want a different seed.
 
 from __future__ import annotations
 
+import json
 import random
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from interview_k.show import Centroid, Point
+    from interview_k.dataviz import Centroid, Point
+
+OUT = Path(__file__).parent.parent / "datasets.json"
 
 TWENTY: list[Point] = [
     (10, 15),
@@ -105,19 +109,23 @@ def uniform(seed: int = 6) -> list[Point]:
     return [(r.randint(0, 100), r.randint(0, 100)) for _ in range(100)]
 
 
-BLOBS = blobs()
-TIGHT = tight()
-LOPSIDED = lopsided()
-ELONGATED = elongated()
-UNSCALED = unscaled()
-UNIFORM = uniform()
-
-# Derived, for tours and tests. The constants above are the normal way in.
 DATASETS: dict[str, list[Point]] = {
-    "blobs": BLOBS,
-    "tight": TIGHT,
-    "lopsided": LOPSIDED,
-    "elongated": ELONGATED,
-    "unscaled": UNSCALED,
-    "uniform": UNIFORM,
+    "TWENTY": TWENTY,
+    "BLOBS": blobs(),
+    "TIGHT": tight(),
+    "LOPSIDED": lopsided(),
+    "ELONGATED": elongated(),
+    "UNSCALED": unscaled(),
+    "UNIFORM": uniform(),
 }
+
+
+def main() -> None:
+    # one line per dataset: a 1000-point list is unreadable pretty-printed, and this still diffs per dataset
+    body = ",\n".join(f'  "{name}": {json.dumps([list(p) for p in points])}' for name, points in DATASETS.items())
+    OUT.write_text("{\n" + body + "\n}\n")
+    print(f"wrote {OUT} — " + ", ".join(f"{name} ({len(points)})" for name, points in DATASETS.items()))
+
+
+if __name__ == "__main__":
+    main()

@@ -10,7 +10,9 @@ A live-coding interview problem: implement k-means from scratch.
 
 | path | what |
 |---|---|
-| `src/interview_k/` | `show.py`, `data.py` — the candidate-facing half |
+| `src/interview_k/dataviz.py` | `show()`, the ASCII scatter — the candidate-facing half |
+| `datasets.json` | the seven datasets, generated; everything reads this |
+| `tools/datasets.py` | regenerates `datasets.json` (`mise run datasets`) |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
 | `docs/answers.md` | reference answers, generated |
 | `solutions.py` | expected centroids / sizes / inertia per dataset |
@@ -68,6 +70,19 @@ uv run interview-k
 If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
 `MARKS` for the ASCII fallback noted on that line.
 
+## The datasets
+
+`datasets.json` — seven named lists of `[x, y]` pairs: `TWENTY` (20 points, hand
+checkable) plus `BLOBS`, `TIGHT`, `LOPSIDED`, `ELONGATED`, `UNSCALED`, `UNIFORM`.
+No import, no package:
+
+```python
+DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
+```
+
+Regenerate with `mise run datasets` — `tools/datasets.py` holds the generators and
+the note on how each one breaks k-means.
+
 ## Development
 
 ```sh
@@ -79,6 +94,7 @@ uv run pytest tests/test_solutions.py                 # grade main.py
 uv run python tools/answers.py > docs/answers.md      # regenerate answers
 uv run python tools/answers.py --write-solutions      # regenerate solutions.py
 uv run python tools/sync_packet.py                    # re-embed source in packet
+mise run datasets                                     # regenerate datasets.json
 ```
 
 To grade a candidate, drop their file in as `main.py` and run the harness.

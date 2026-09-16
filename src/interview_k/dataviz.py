@@ -31,13 +31,8 @@ MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv
 UNLABELED = "·"
 BLANK = " "
 
-
-# Plain tuples — no constructor to import, nothing to convert. The int/float split is
-# the domain: data points are integral (pixels, counts, ages), a centroid is a mean and
-# rarely is. By the numeric tower a Point is accepted wherever a Centroid is expected,
-# but not the reverse — so a mean can never be mistaken for a data point.
-Point = tuple[int, int]
-Centroid = tuple[float, float]
+Point = tuple[int | float, int | float]
+Centroid = Point
 
 Cell = tuple[int, int]  # (row, col) into the character grid
 
@@ -63,7 +58,9 @@ def _terminal_box(width: int, height: int) -> tuple[int, int]:
     )
 
 
-def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Centroid], Cell]:
+def _projection(
+    points: list[Centroid], width: int, height: int
+) -> Callable[[Centroid], Cell]:
     """Map data coordinates onto grid cells, stretching each axis to fill the box."""
     x0, x1 = min(x for x, _ in points), max(x for x, _ in points)
     y0, y1 = min(y for _, y in points), max(y for _, y in points)
@@ -113,7 +110,11 @@ def show(
         grid[row][col] = str(index % 10)
 
     rule = "─" * width
-    notes = [note for note in (title, f"{dropped} point(s) unusable" if dropped else "") if note]
+    notes = [
+        note
+        for note in (title, f"{dropped} point(s) unusable" if dropped else "")
+        if note
+    ]
     print(f"┌{rule}")
     print("\n".join("│" + "".join(row) for row in grid))
     print(f"└{rule}  " + "  ·  ".join(notes))
@@ -126,9 +127,28 @@ def _demo() -> None:
     right = [p for p in quad if p[0] >= 0]
 
     show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(left, right, centroids=[(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
-    show((p for p in left), (p for p in right), width=44, height=8, title="generators — safe, show() is single-pass")
-    show(quad, centroids=[(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
+    show(
+        left,
+        right,
+        centroids=[(-10.0, -20.0), (10.0, -20.0)],
+        width=44,
+        height=8,
+        title="two groups + centroids",
+    )
+    show(
+        (p for p in left),
+        (p for p in right),
+        width=44,
+        height=8,
+        title="generators — safe, show() is single-pass",
+    )
+    show(
+        quad,
+        centroids=[(0.0, float("nan"))],
+        width=44,
+        height=8,
+        title="nan centroid does not crash",
+    )
     show(width=44)
 
     try:
@@ -138,9 +158,16 @@ def _demo() -> None:
     else:
         rng = np.random.default_rng(1)
         arr = rng.normal(0, 20, (80, 2))
-        pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
+        pts: list[Point] = [
+            (round(x), round(y)) for x, y in arr
+        ]  # ndarray rows -> Point
         mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
-        show(*mid, centroids=[(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
+        show(
+            *mid,
+            centroids=[(-20.0, 0.0), (20.0, 0.0)],
+            width=44,
+            title="from an ndarray",
+        )
 
 
 if __name__ == "__main__":

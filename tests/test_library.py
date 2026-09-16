@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from interview_k import Centroid, Point, show
-from interview_k.data import DATASETS, TWENTY, UNIFORM
 
 if TYPE_CHECKING:
     import pytest
+
+DATASETS: dict[str, list[Point]] = {
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
+}
+TWENTY = DATASETS["TWENTY"]
+UNIFORM = DATASETS["UNIFORM"]
 
 SQUARE: list[Point] = [(0, 0), (0, 1), (1, 0), (1, 1)]
 
@@ -75,7 +83,7 @@ def test_twenty_is_hand_checkable() -> None:
 
 
 def test_datasets_are_the_documented_size() -> None:
-    sizes = {"blobs": 1000, "tight": 1000, "lopsided": 1000, "elongated": 1000, "unscaled": 1000, "uniform": 100}
+    sizes = {"TWENTY": 20, "BLOBS": 1000, "TIGHT": 1000, "LOPSIDED": 1000, "ELONGATED": 1000, "UNSCALED": 1000, "UNIFORM": 100}
     assert sizes.keys() == DATASETS.keys()
     for name, points in DATASETS.items():
         assert len(points) == sizes[name], name
@@ -95,6 +103,6 @@ def test_datasets_have_distinct_shapes() -> None:
         xs = [x for x, _ in points]
         ys = [y for _, y in points]
         spans[name] = (max(xs) - min(xs), max(ys) - min(ys))
-    assert spans["unscaled"][1] / spans["unscaled"][0] > 100  # y dwarfs x
-    assert spans["tight"][0] < 10  # small integer range
-    assert spans["elongated"][0] > spans["elongated"][1]  # wider than tall
+    assert spans["UNSCALED"][1] / spans["UNSCALED"][0] > 100  # y dwarfs x
+    assert spans["TIGHT"][0] < 10  # small integer range
+    assert spans["ELONGATED"][0] > spans["ELONGATED"][1]  # wider than tall

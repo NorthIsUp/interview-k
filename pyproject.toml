@@ -9,7 +9,7 @@ authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]
 dependencies    = []
 
 [project.scripts]
-interview-k = "interview_k.show:_demo"
+interview-k = "interview_k.dataviz:_demo"
 
 [build-system]
 requires      = ["uv_build>=0.8,<0.9"]
@@ -91,7 +91,8 @@ testpaths  = ["tests"]
 [tool.pyright]
 venv          = ".venv"
 venvPath      = "."
-exclude       = ["**/__pycache__", "**/.venv"]
+# .claude holds git worktrees — other branches' copies of this tree, checked by their own run
+exclude       = ["**/__pycache__", "**/.venv", ".claude"]
 pythonVersion = "3.13"
 
 reportConstantRedefinition         = "error"

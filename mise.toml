@@ -15,6 +15,10 @@ UV_PREVIEW = "1"
 description = "Sync uv environment"
 run         = "uv sync"
 
+[tasks.datasets]
+description = "Regenerate datasets.json"
+run         = "uv run python tools/datasets.py"
+
 [tasks.test]
 description = "Run tests"
 run         = "uv run pytest"
