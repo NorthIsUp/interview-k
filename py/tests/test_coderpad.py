@@ -181,7 +181,7 @@ def test_questions_are_the_two_the_interview_ships() -> None:
 
 def test_cookie_header_from_devtools_table() -> None:
     # Application -> Cookies -> select all -> copy: name, value, domain, path, expires, size...
-    table = "_coderpad_rails_session_3\tabc123\t.coderpad.io\t/\tSession\t57B\n" "currency\tUSD\tapp.coderpad.io\t/\tSession\t11B\n"
+    table = "_coderpad_rails_session_3\tabc123\t.coderpad.io\t/\tSession\t57B\ncurrency\tUSD\tapp.coderpad.io\t/\tSession\t11B\n"
     assert read_cookie_header(table) == "_coderpad_rails_session_3=abc123; currency=USD"
 
 

@@ -103,7 +103,7 @@ if __name__ == "__main__":
     # once kmeans works:  clusters = kmeans(TWENTY, 3); print_clusters(clusters); show(clusters)
 '''
 
-TS_MAIN = '''/** Your solution. Press Run to execute this file. */
+TS_MAIN = """/** Your solution. Press Run to execute this file. */
 
 import {{ printClusters, show, TWENTY }} from "./index";
 import type {{ Centroid, Point }} from "./dataviz";
@@ -112,7 +112,7 @@ import type {{ Centroid, Point }} from "./dataviz";
 
 show({{ points: TWENTY, title: "the data" }});
 // once kmeans works:  const clusters = kmeans(TWENTY, 3); printClusters(clusters); show(clusters);
-'''
+"""
 
 # data.py reaches for the package it no longer lives in once the modules sit beside main.py.
 PACKAGE_IMPORT = "from interview_k.dataviz import"
@@ -142,15 +142,13 @@ def python_project() -> dict[str, str]:
     main = PY_MAIN.format(stub=stub)
     compile(main, "main.py", "exec")  # a stub that does not parse is worse than none
 
-    return shipped(
-        {
-            ".cpad": _cpad("python src/main.py"),
-            # The template boots with `pip3 install -r requirements.txt`; without it that fails.
-            "requirements.txt": "# The interview is stdlib only.\n",
-            **files,
-            "src/main.py": main,
-        }
-    )
+    return shipped({
+        ".cpad": _cpad("python src/main.py"),
+        # The template boots with `pip3 install -r requirements.txt`; without it that fails.
+        "requirements.txt": "# The interview is stdlib only.\n",
+        **files,
+        "src/main.py": main,
+    })
 
 
 def strip_ts_extension(source: str) -> str:
@@ -179,21 +177,18 @@ def strip_entry_guard(source: str) -> str:
 def typescript_project() -> dict[str, str]:
     files = {f"src/{path.name}": strip_entry_guard(strip_ts_extension(path.read_text())) for path in (TS / "src").glob("*.ts")}
     manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
-    return shipped(
-        {
-            ".cpad": _cpad("npm run main"),
-            "package.json": json.dumps(manifest, indent=2) + "\n",
-            **files,
-            "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
-        }
-    )
+    return shipped({
+        ".cpad": _cpad("npm run main"),
+        "package.json": json.dumps(manifest, indent=2) + "\n",
+        **files,
+        "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
+    })
 
 
 # ── what the candidate is told ───────────────────────────────────────────────
 
 PAD_NOTE = (
-    "`show()` and the datasets are in this project already — open the files on the left. "
-    "Write your solution in `main` and press Run.\n"
+    "`show()` and the datasets are in this project already — open the files on the left. Write your solution in `main` and press Run.\n"
 )
 
 # Repo commands: regenerating the answer key, running the harness, grading a candidate's
