@@ -1,6 +1,6 @@
 """Regenerate every generated file in this question. `mise run sync kmeans` runs this.
 
-    common/data.json      the data both languages read — source, committed
+    common/data.json      written by common/data.py, which mise runs first — source, committed
     _packet.md            library source re-embedded, so the two cannot drift — source, committed
 
 Everything derived lands in build/<question>/, which is gitignored:
@@ -20,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-from questions.kmeans.py import answers, datasets, ts_fixture
+from questions.kmeans.py import answers, ts_fixture
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
@@ -54,7 +54,6 @@ def _sync_packet() -> int:
 
 
 def main() -> int:
-    datasets.main()
     # each of these reads what the previous one wrote, so the order is the dependency order
     answers.write_solutions(BUILD / "solutions.json")
     answers.write_answers(BUILD / "answers.md")

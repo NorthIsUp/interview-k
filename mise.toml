@@ -30,22 +30,27 @@ run         = "npm ci"
 # ── questions ───────────────────────────────────────────────────────────────
 
 [tasks.sync]
-description = "Regenerate a question's generated files (datasets, solutions, answers, parity fixture, packet). Default: every question."
+description = "Regenerate a question's generated files. Default: every question."
 usage       = """
 arg "[name]" default="all" help="Question directory under questions/, or 'all'"
 """
 run = """
 set -e
 if [ "$usage_name" = all ]; then
-  set -- questions/*/sync.py
+  set -- questions/*/
 else
-  set -- "questions/$usage_name/sync.py"
+  set -- "questions/$usage_name/"
+  [ -d "$1" ] || { echo "no such question: $usage_name (have: $(ls questions | tr '\\n' ' '))" >&2; exit 1; }
 fi
-for s; do
-  [ -f "$s" ] || { echo "no such question: $usage_name (have: $(ls questions | grep -v '__' | tr '\\n' ' '))" >&2; exit 1; }
-  echo "── $s"
+for q; do
+  name=$(basename "$q")
+  echo "── $name"
+  # a question's data is whatever its common/data.py prints to common/data.json; everything
+  # else it generates is sync.py's business, and both are optional
+  [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py"
   # as a module, not a path, so the repo root stays importable (`questions.<name>`)
-  uv run python -m "questions.$(basename "$(dirname "$s")").sync"
+  [ -f "$q/sync.py" ] && uv run python -m "questions.$name.sync"
+  true
 done
 """
 

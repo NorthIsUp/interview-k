@@ -1,7 +1,7 @@
 """The datasets are what every other check here rests on, so their shape is asserted.
 
 Sizes, ranges and spans — not the points themselves, which are `common/data.json`. A failure
-here means `datasets.py` drifted from what packet.md tells the interviewer to expect.
+here means `common/data.py` drifted from what _packet.md tells the interviewer to expect.
 """
 
 from __future__ import annotations

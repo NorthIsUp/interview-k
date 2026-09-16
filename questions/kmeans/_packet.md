@@ -355,7 +355,7 @@ failure-mode probes, so you can *show* a failure instead of describing it.
 | `uniform` | 100 points, **no clusters at all** — k-means still returns k of them |
 
 The points themselves are this question's `common/data.json` — generated once by
-`py/datasets.py` (`mise run sync kmeans`) and read by both languages, the tests, the
+`common/data.py` (`mise run sync kmeans`) and read by both languages, the tests, the
 answer key and both pads. Nothing regenerates them, so nothing can disagree about them:
 
 ```python

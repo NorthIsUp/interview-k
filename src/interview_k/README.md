@@ -54,7 +54,7 @@ No import and no package — the TypeScript side reads the same file:
 DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
 ```
 
-`questions/kmeans/py/datasets.py` holds the generators and the note on how each
+`questions/kmeans/common/data.py` holds the generators and the note on how each
 set breaks k-means; `mise run sync kmeans` regenerates the file.
 
 ## Development

@@ -27,6 +27,7 @@ becomes a question the moment it has one.
 | path | what |
 |---|---|
 | `common/README.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
+| `common/data.py` | generates `common/data.json`; `mise run sync` runs it if it exists |
 | `_packet.md` | interviewer packet: problem, rubric, hint ladder, timeline. `_` means it never ships to a pad |
 | `pad.py` | this question's pad title, description and `main` templates |
 | `sync.py` | regenerates everything generated here; the whole contract |
@@ -35,7 +36,7 @@ becomes a question the moment it has one.
 
 A language directory holds that language's `main` (the reference solution — swap
 in a candidate's to grade theirs) and its tests. Python adds the generators
-(`datasets.py`, `answers.py`, `ts_fixture.py`); TypeScript adds `datasets.ts`.
+(`answers.py`, `ts_fixture.py`); TypeScript adds `datasets.ts`.
 
 Everything derived lands in `build/<name>/`, which is gitignored — `solutions.json`
 (the expected output per dataset), `answers.md` (the key as markdown) and
