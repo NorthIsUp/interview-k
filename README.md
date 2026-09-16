@@ -1,40 +1,49 @@
 # interview-k
 
-A live-coding interview problem: implement k-means from scratch.
+Live-coding interview questions, one directory each, in Python and TypeScript —
+plus `show()`, a dependency-free ASCII scatter that renders anywhere a candidate
+might be typing.
 
 > [!WARNING]
-> This repo contains the **answer key** — `docs/packet.md` (rubric, hint ladder),
-> `py/main.py` / `ts/main.ts` (worked solutions), `py/solutions.py` and `docs/answers.md`
-> (expected output). Don't send a candidate the repo link; paste them the library
-> and the problem statement.
+> This repo contains the **answer keys** — packets, worked solutions and expected
+> output. Don't send a candidate the repo link; paste them the library and the
+> problem statement.
 
-Python in `py/`, TypeScript in `ts/`, interview material in `docs/`. Each
-language documents its own half:
+| path | what |
+|---|---|
+| `questions/<name>/` | one question: brief, packet, data, and a directory per language |
+| `src/interview_k/` | `dataviz.py` — `show()`, shared by every question |
+| `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
+| `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
+| `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
+| `tests/` | library and tooling tests; each question grades itself in its own directory |
 
-- [`py/README.md`](py/README.md) — `show()`, the datasets, the Python harness
-- [`ts/README.md`](ts/README.md) — the same two modules, ported
+## A question directory
+
+`questions/kmeans/` is the pattern. The only required file is `sync.py` —
+`mise run sync <name>` runs it, `mise run sync` runs every one, and a directory
+becomes a question the moment it has one.
 
 | path | what |
 |---|---|
 | `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
-| `coderpad.toml` | which question in the bank is ours; maintained by `coderpad:sync` |
-| `py/src/interview_k/` | `dataviz.py` — the candidate-facing half |
-| `datasets.json` | the seven datasets, generated; both languages read it |
-| `py/tools/datasets.py` | regenerates `datasets.json` (`mise run datasets`) |
-| `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
-| `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
-| `docs/answers.md` | reference answers, generated |
-| `py/solutions.py` | expected centroids / sizes / inertia per dataset |
-| `py/main.py` | reference solution |
-| `ts/main.ts` | the same solution, ported — same seeds, same clusters |
-| `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
-| `py/tools/sync_packet.py` | re-embeds library source into the packet |
-| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (renders, answer key) |
-| `py/tools/coderpad.py` | builds both CoderPad projects; `--push` syncs them to the question bank |
-| `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
-| `ts/test/solutions.test.ts` | holds `main.ts` to the same answers |
+| `packet.md` | interviewer packet: problem, rubric, hint ladder, timeline |
+| `pad.py` | this question's pad title, description and `main` templates |
+| `sync.py` | regenerates everything generated here; the whole contract |
+| `py/` `ts/` | one directory per language — reference solution, generators, tests |
+| `datasets.json` `answers.md` | generated; both languages read the data |
 
-## The problem
+A language directory holds that language's `main` (the reference solution — swap
+in a candidate's to grade theirs) and its tests. Python adds the generators
+(`datasets.py`, `answers.py`, `ts_fixture.py`) and the generated `solutions.py`;
+TypeScript adds `datasets.ts` and the generated `parity.json` that holds the port
+to Python's output.
+
+Adding a language to a question is adding a directory named for it. Adding a
+question is adding a directory with a `sync.py`. Neither edits a registry —
+`tools/coderpad.py` discovers both.
+
+## The kmeans problem
 
 Implement k-means clustering from scratch. You're given `X`, an array of shape
 `(n, d)` — n points in d dimensions — and an integer `k`. Return the cluster
@@ -49,20 +58,27 @@ def kmeans(X, k):
 
 Plenty is left unspecified on purpose. Ask.
 
-`INSTRUCTIONS.md` is the version a candidate sees — keep the two in step.
+`questions/kmeans/INSTRUCTIONS.md` is the version a candidate sees — keep the two
+in step.
 
 ## Development
 
 ```sh
-mise install && mise run sync
-mise run test          # pytest + node --test
+mise run install       # uv sync + npm ci
+mise run sync          # regenerate every question
+mise run sync kmeans   # just one
+mise run test          # pytest + node --test, both languages
 mise run typecheck     # pyright + tsc
 mise run lint
-mise run coderpad:sync --push   # sync "k-means [py]" and "k-means [ts]" to the question bank
-                                # each is a CoderPad project you copy per interview; add
+
+mise run coderpad:sync --push   # sync every question to the CoderPad question bank
+                                # each is a project you copy per interview; add
                                 # --recreate to change its files, which changes the id
 ```
 
-Per-language commands live in each half's README.
+The library halves document themselves:
+[`src/interview_k/README.md`](src/interview_k/README.md) and
+[`ts/README.md`](ts/README.md).
 
-To grade a candidate, drop their file in as `py/main.py` and run the harness.
+To grade a candidate, drop their file in as `questions/<name>/<lang>/main.*` and
+run `mise run test`.

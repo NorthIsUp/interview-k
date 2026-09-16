@@ -12,68 +12,70 @@ experimental = true
 [env]
 UV_PREVIEW = "1"
 
-# ── python (py/) ────────────────────────────────────────────────────────────
+# ── toolchains ──────────────────────────────────────────────────────────────
 
-[tasks."py:sync"]
-description = "Sync uv environment"
-dir         = "py"
+[tasks.install]
+description = "Install both toolchains"
+depends     = ["py:install", "ts:install"]
+
+[tasks."py:install"]
+description = "Sync the uv environment"
 run         = "uv sync"
 
-[tasks."py:test"]
-description = "Run python tests"
-dir         = "py"
-run         = "uv run pytest"
-
-[tasks."py:typecheck"]
-description = "Run pyright"
-dir         = "py"
-run         = "uv run pyright"
-
-[tasks."py:build"]
-description = "Build wheel + sdist"
-dir         = "py"
-run         = "uv build"
-
-[tasks.datasets]
-description = "Regenerate datasets.json — both languages read it"
-dir         = "py"
-run         = "uv run python tools/datasets.py"
-
-[tasks."py:fixture"]
-description = "Regenerate the parity fixture the TS port is tested against"
-dir         = "py"
-run         = "uv run python -m tools.ts_fixture"
-
-# ── typescript (ts/) ────────────────────────────────────────────────────────
-
-[tasks."ts:sync"]
+[tasks."ts:install"]
 description = "Install node dependencies"
 dir         = "ts"
 run         = "npm ci"
 
+# ── questions ───────────────────────────────────────────────────────────────
+
+[tasks.sync]
+description = "Regenerate a question's generated files (datasets, solutions, answers, parity fixture, packet). Default: every question."
+usage       = """
+arg "[name]" default="all" help="Question directory under questions/, or 'all'"
+"""
+run = """
+set -e
+if [ "$usage_name" = all ]; then
+  set -- questions/*/sync.py
+else
+  set -- "questions/$usage_name/sync.py"
+fi
+for s; do
+  [ -f "$s" ] || { echo "no such question: $usage_name (have: $(ls questions | grep -v '__' | tr '\\n' ' '))" >&2; exit 1; }
+  echo "── $s"
+  # as a module, not a path, so the repo root stays importable (`questions.<name>`)
+  uv run python -m "questions.$(basename "$(dirname "$s")").sync"
+done
+"""
+
+# ── checks ──────────────────────────────────────────────────────────────────
+
+[tasks.test]
+description = "Run all tests, both languages"
+depends     = ["py:test", "ts:test"]
+
+[tasks."py:test"]
+description = "Run python tests — the library, the tooling, and every question's grading suite"
+run         = "uv run pytest"
+
 [tasks."ts:test"]
-description = "Run typescript tests"
+description = "Run typescript tests — the library and every question's port"
 dir         = "ts"
-run         = "node --test test/*.test.ts"
+run         = "node --test test/*.test.ts ../questions/*/ts/*.test.ts"
+
+[tasks.typecheck]
+description = "Typecheck both languages"
+depends     = ["py:typecheck", "ts:typecheck"]
+
+[tasks."py:typecheck"]
+description = "Run pyright"
+run         = "uv run pyright"
 
 [tasks."ts:typecheck"]
 description = "Run tsc"
 dir         = "ts"
 run         = "npx tsc --noEmit"
-
-# ── both ────────────────────────────────────────────────────────────────────
-
-[tasks.sync]
-description = "Sync both toolchains"
-depends     = ["py:sync", "ts:sync"]
-
-[tasks.test]
-description = "Run all tests"
-depends     = ["py:test", "ts:test"]
-
-[tasks.typecheck]
-description = "Typecheck both languages"
-depends     = ["py:typecheck", "ts:typecheck"]
 
 [tasks.lint]
 description = "Run linters"
@@ -83,36 +85,38 @@ run         = "hk check"
 description = "Auto-fix lint issues"
 run         = "hk fix"
 
+# ── coderpad ────────────────────────────────────────────────────────────────
+
+[tasks."coderpad:sync"]
+description = "Build the CoderPad project for every question and language (--push syncs them, needs ~/.config/coderpad/cookie)"
+usage       = '''
+flag "--push" help="Also sync the questions to your CoderPad question bank"
+flag "--recreate" help="Replace the questions — the only way to change their project files, and it changes their ids"
+'''
+run = 'uv run python -m tools.coderpad ${usage_push:+--push} ${usage_recreate:+--recreate}'
+
+[tasks."coderpad:test"]
+description = "Check every CoderPad project compiles and runs the way its pad does — offline"
+run         = "uv run python -m tools.coderpad_check"
+
+# ── release ─────────────────────────────────────────────────────────────────
+
+[tasks.build]
+description = "Build wheel + sdist"
+run         = "uv build"
+
 [tasks.version]
 description = "Print current version"
-dir         = "py"
 run         = "uv version --short"
 
 [tasks.bump-patch]
 description = "Bump patch version"
-dir         = "py"
 run         = "uv version --bump patch"
 
 [tasks.bump-minor]
 description = "Bump minor version"
-dir         = "py"
 run         = "uv version --bump minor"
 
 [tasks.bump-major]
 description = "Bump major version"
-dir         = "py"
 run         = "uv version --bump major"
-
-[tasks."coderpad:sync"]
-description = "Build the CoderPad project for both languages (--push syncs them, needs ~/.config/coderpad/cookie)"
-dir         = "py"
-usage       = '''
-flag "--push" help="Also sync both questions to your CoderPad question bank"
-flag "--recreate" help="Replace the questions — the only way to change their project files, and it changes their ids"
-'''
-run         = 'uv run python tools/coderpad.py ${usage_push:+--push} ${usage_recreate:+--recreate}'
-
-[tasks."coderpad:test"]
-description = "Check both CoderPad projects compile and run the way their pads do — offline"
-dir         = "py"
-run         = "uv run python -m tools.coderpad_check"

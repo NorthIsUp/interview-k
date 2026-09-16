@@ -6,7 +6,7 @@
  * what `test/solutions.test.ts` checks against the answer key.
  */
 
-import type { Centroid, Point } from "./src/dataviz.ts";
+import type { Centroid, Point } from "../../../ts/src/dataviz.ts";
 
 /**
  * Deterministic and tiny: a 32-bit LCG (Numerical Recipes), enough to seed k-means++.

@@ -12,9 +12,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { kmeans } from "../main.ts";
-import { DATASETS } from "../src/index.ts";
-import type { Centroid, Point } from "../src/dataviz.ts";
+import { kmeans } from "./main.ts";
+import { DATASETS } from "./datasets.ts";
+import type { Centroid, Point } from "../../../ts/src/dataviz.ts";
 
 interface Fixture {
   k: number;

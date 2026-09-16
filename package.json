@@ -1,0 +1,22 @@
+{
+  "name": "interview-k",
+  "version": "0.1.0",
+  "description": "interview-k: ASCII scatter helper for live-coding interview questions, ported from python",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    ".": "./ts/src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test ts/test/*.test.ts questions/*/ts/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "demo": "node ts/src/dataviz.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "typescript": "^5.9"
+  }
+}

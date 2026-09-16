@@ -1,8 +1,8 @@
 """Grade main.py against every dataset.
 
-    uv run pytest tests/test_solutions.py
+    uv run pytest questions/kmeans
 
-Drop a candidate's solution in as main.py to grade theirs instead. It must define:
+Drop a candidate's solution in as questions/kmeans/py/main.py to grade theirs instead. It must define:
 
     kmeans(points: Sequence[Point], k: int) -> list[tuple[Centroid, list[Point]]]
 
@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from main import kmeans
-from solutions import ANSWERS, K
+from questions.kmeans.py.main import kmeans
+from questions.kmeans.py.solutions import ANSWERS, K
 
 # spelled out rather than imported, so grading a candidate's main.py needs nothing but this file
 Point = tuple[int, int]
@@ -32,8 +32,7 @@ Solved = tuple[str, list[Point], Clusters]
 
 
 DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points]
-    for name, points in json.loads((Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
+    name: [(x, y) for x, y in points] for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
 }
 
 

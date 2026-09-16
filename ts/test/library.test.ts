@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DATASETS, TWENTY, UNIFORM } from "../src/index.ts";
+// the library is question-agnostic; kmeans' data is just a convenient fixture
+import { DATASETS, TWENTY, UNIFORM } from "../../questions/kmeans/ts/datasets.ts";
 import { show, type Centroid, type Point } from "../src/dataviz.ts";
 import { capture } from "./capture.ts";
 

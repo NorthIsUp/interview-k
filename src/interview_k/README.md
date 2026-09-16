@@ -1,6 +1,6 @@
 # interview-k — Python
 
-The candidate-facing half is `src/interview_k/dataviz.py` plus `datasets.json`, stdlib only.
+The candidate-facing half is `src/interview_k/dataviz.py` plus the question's `datasets.json`, stdlib only.
 
 ## `show()` — ASCII scatter, stdlib only
 
@@ -46,7 +46,7 @@ order and point order are not part of the contract — sorting inside `kmeans` i
 
 ## The datasets
 
-Seven of them, in `datasets.json` at the repo root: `TWENTY`, `BLOBS`, `TIGHT`,
+Seven of them, in `questions/kmeans/datasets.json`: `TWENTY`, `BLOBS`, `TIGHT`,
 `LOPSIDED`, `ELONGATED`, `UNSCALED`, `UNIFORM`. Integer coordinates throughout.
 No import and no package — the TypeScript side reads the same file:
 
@@ -54,22 +54,19 @@ No import and no package — the TypeScript side reads the same file:
 DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
 ```
 
-`py/tools/datasets.py` (`mise run datasets`) regenerates the file and holds the
-generators, plus the note on how each set breaks k-means.
+`questions/kmeans/py/datasets.py` holds the generators and the note on how each
+set breaks k-means; `mise run sync kmeans` regenerates the file.
 
 ## Development
 
 ```sh
-uv run interview-k                                    # the show() demo, every input shape
-uv run pytest                                         # the whole suite
-uv run pytest tests/test_solutions.py                 # grade main.py
+uv run interview-k                 # the show() demo, every input shape
+uv run pytest                      # the whole suite
+uv run pytest questions/kmeans     # grade that question's main.py
 uv run pyright
 
-uv run python tools/answers.py > ../docs/answers.md   # regenerate answers
-uv run python tools/answers.py --write-solutions      # regenerate solutions.py
-uv run python tools/sync_packet.py                    # re-embed source in packet
-uv run python -m tools.ts_fixture                     # refresh the TS parity fixture
-uv run python tools/coderpad.py --push                # sync both CoderPad projects
+mise run sync kmeans               # regenerate that question: data, answers, fixture, packet
+mise run coderpad:sync --push      # sync every CoderPad project
 ```
 
-To grade a candidate, drop their file in as `main.py` and run the harness.
+To grade a candidate, drop their file in as `questions/<name>/py/main.py` and run the harness.

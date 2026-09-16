@@ -7,12 +7,7 @@ The input will be standard python types, but you may use numpy for the internal 
 The output should be a list of centroids and their associated points.
 
 ```python
-def cluster(
-	points: Iterable[Point],
-	k: int,
-	max_iter: int = 100
-) -> Iterable[tuple[Centroid, list[Point]]]:
-	...
+def cluster(points: Iterable[Point], k: int, max_iter: int = 100) -> Iterable[tuple[Centroid, list[Point]]]: ...
 ```
 
 ### constraints

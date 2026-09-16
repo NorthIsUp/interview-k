@@ -37,7 +37,6 @@ def kmeans(points: Sequence[Point], k: int, max_iter: int = 100) -> list[tuple[C
     Returns one (centroid, its points) pair per cluster.
     """
     ...
-
 ```
 
 `print_clusters` / `printClusters` is given to them, in the `dataviz` module beside their file.

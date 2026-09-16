@@ -7,9 +7,10 @@ import pytest
 
 from interview_k import Centroid, Point, show
 
+# the library is question-agnostic; kmeans' data is just a convenient fixture
 DATASETS: dict[str, list[Point]] = {
     name: [(x, y) for x, y in points]
-    for name, points in json.loads((Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
+    for name, points in json.loads((Path(__file__).parent.parent / "questions/kmeans/datasets.json").read_text()).items()
 }
 TWENTY = DATASETS["TWENTY"]
 UNIFORM = DATASETS["UNIFORM"]

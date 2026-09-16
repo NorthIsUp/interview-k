@@ -35,17 +35,17 @@ import tomllib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import ModuleType
 
-PY = Path(__file__).parent.parent
-TS = PY.parent / "ts"
-PACKET = PY.parent / "docs" / "packet.md"
-INSTRUCTIONS = PY.parent / "INSTRUCTIONS.md"
-BUILD = PY / "build"
+ROOT = Path(__file__).parent.parent
+QUESTION_ROOT = ROOT / "questions"
+BUILD = ROOT / "build"
 
 APP = "https://app.coderpad.io"
 GRAPHQL = f"{APP}/graphql"
@@ -59,8 +59,6 @@ COOKIE_FILE = Path(os.environ.get("CODERPAD_COOKIE_FILE") or Path.home() / ".con
 # Cloudflare answers urllib's default User-Agent with a 403 (error 1010) before CoderPad sees
 # the request. We are driving the web app as the browser, so say so.
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-
-DESCRIPTION = "Implement k-means from scratch. Rubric, hint ladder and expected output: docs/packet.md in the interview-k repo."
 
 # A project question takes its environment — and so its language — from a template. Note that
 # `multifile_python` is a template slug and is rejected as a `language`; the two are separate
@@ -77,52 +75,13 @@ def _cpad(command: str) -> str:
     return json.dumps({"targets": {"run": {"label": "Main", "command": command}}}, indent=2) + "\n"
 
 
-def _stub(fence: str, opener: str) -> str:
+def _stub(packet: Path, fence: str, opener: str) -> str:
     """The candidate's stub, read out of the packet so there is one copy of it per language."""
-    match = re.search(rf"```{fence}\n({re.escape(opener)}\n.*?)```", PACKET.read_text(), re.DOTALL)
+    match = re.search(rf"```{fence}\n({re.escape(opener)}\n.*?)```", packet.read_text(), re.DOTALL)
     if match is None:
-        raise SystemExit(f"packet.md no longer has a ```{fence} block starting {opener!r} — fix the marker in _stub()")
+        raise SystemExit(f"{packet} no longer has a ```{fence} block starting {opener!r} — fix the opener in its pad.py")
     return match.group(1).rstrip()
 
-
-# The imports and the first Run belong to the project layout, not to the problem, so they live
-# here rather than in the packet. Plotting the raw data gives the Run button something to do
-# before kmeans() returns anything.
-PY_MAIN = '''"""Your solution. Press Run to execute this file."""
-
-import json
-from collections.abc import Sequence
-from pathlib import Path
-
-from dataviz import print_clusters, show
-
-DATASETS = {{
-    name: [(x, y) for x, y in points]
-    for name, points in json.loads(Path(__file__).with_name("datasets.json").read_text()).items()
-}}
-TWENTY = DATASETS["TWENTY"]
-
-{stub}
-
-
-if __name__ == "__main__":
-    show(points=TWENTY, title="the data")
-    # once kmeans works:  clusters = kmeans(TWENTY, 3); print_clusters(clusters); show(clusters)
-'''
-
-TS_MAIN = """/** Your solution. Press Run to execute this file. */
-
-import {{ printClusters, show, TWENTY }} from "./index";
-import type {{ Centroid, Point }} from "./dataviz";
-
-{stub}
-
-show({{ points: TWENTY, title: "the data" }});
-// once kmeans works:  const clusters = kmeans(TWENTY, 3); printClusters(clusters); show(clusters);
-"""
-
-# The datasets are data, not code: both pads get the same JSON the repo reads.
-DATASETS_JSON = PY.parent / "datasets.json"
 
 # A leading underscore means the file is ours. A pad project is handed to the candidate whole,
 # so anything the interviewer keeps beside it — `_tests/`, scratch, the marking scheme — is
@@ -134,14 +93,14 @@ def shipped(project: dict[str, str]) -> dict[str, str]:
     return {path: text for path, text in project.items() if not any(part.startswith(PRIVATE) for part in path.split("/"))}
 
 
-def python_project() -> dict[str, str]:
+def python_project(question: Question) -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    files = {f"src/{path.name}": path.read_text() for path in (PY / "src/interview_k").glob("*.py")}
+    files = {f"src/{path.name}": path.read_text() for path in (ROOT / "src/interview_k").glob("*.py")}
 
-    stub = _stub("python", "from collections.abc import Sequence")
+    stub = _stub(question.packet, "python", question.pad.PY_OPENER)
     # The packet's stub carries its own Sequence import; main.py already has one.
     stub = stub.replace("from collections.abc import Sequence\n", "", 1).lstrip()
-    main = PY_MAIN.format(stub=stub)
+    main = question.pad.PY_MAIN.format(stub=stub)
     compile(main, "main.py", "exec")  # a stub that does not parse is worse than none
 
     return shipped({
@@ -149,7 +108,7 @@ def python_project() -> dict[str, str]:
         # The template boots with `pip3 install -r requirements.txt`; without it that fails.
         "requirements.txt": "# The interview is stdlib only.\n",
         **files,
-        "src/datasets.json": DATASETS_JSON.read_text(),
+        "src/datasets.json": question.datasets.read_text(),
         "src/main.py": main,
     })
 
@@ -178,26 +137,38 @@ def strip_entry_guard(source: str) -> str:
 
 
 def flatten_json_import(source: str) -> str:
-    """In the pad there is no ts/ and py/ to sit between: datasets.json is beside index.ts.
+    """In the pad there is no questions/<name>/ts to sit in: datasets.json is beside datasets.ts.
 
     `import.meta` goes with it — a pad compiles CommonJS, where it does not exist — so the
     path becomes the plain string the Run button's working directory resolves.
     """
-    return source.replace('new URL("../../datasets.json", import.meta.url)', '"src/datasets.json"')
+    return re.sub(r'new URL\("(?:\.\./)+datasets\.json", import\.meta\.url\)', '"src/datasets.json"', source)
 
 
-def typescript_project() -> dict[str, str]:
-    files = {
-        f"src/{path.name}": flatten_json_import(strip_entry_guard(strip_ts_extension(path.read_text())))
-        for path in (TS / "src").glob("*.ts")
-    }
-    manifest = {"name": "k-means", "private": True, "scripts": {"main": "ts-node src/main.ts"}}
+# A question's TS reaches the shared library by relative path; a pad has every file in one
+# flat src/, so the walk up to ts/src/ collapses to a sibling.
+LIB_IMPORT = re.compile(r'(from\s+")(?:\.\./)+ts/src/([^"]+)(")')
+
+
+def flatten_lib_import(source: str) -> str:
+    return LIB_IMPORT.sub(r"\1./\2\3", source)
+
+
+def _for_the_pad(source: str) -> str:
+    """Every rewrite a repo .ts needs before a pad will compile it, in one place."""
+    return flatten_json_import(flatten_lib_import(strip_entry_guard(strip_ts_extension(source))))
+
+
+def typescript_project(question: Question) -> dict[str, str]:
+    sources = [*(ROOT / "ts/src").glob("*.ts"), question.dir / "datasets.ts"]
+    files = {f"src/{path.name}": _for_the_pad(path.read_text()) for path in sources}
+    manifest = {"name": question.name, "private": True, "scripts": {"main": "ts-node src/main.ts"}}
     return shipped({
         ".cpad": _cpad("npm run main"),
         "package.json": json.dumps(manifest, indent=2) + "\n",
         **files,
-        "src/datasets.json": DATASETS_JSON.read_text(),
-        "src/main.ts": TS_MAIN.format(stub=_stub("typescript", "type Cluster = [Centroid, Point[]];")),
+        "src/datasets.json": question.datasets.read_text(),
+        "src/main.ts": question.pad.TS_MAIN.format(stub=_stub(question.packet, "typescript", question.pad.TS_OPENER)),
     })
 
 
@@ -229,7 +200,7 @@ def _for_the_candidate(readme: Path) -> str:
 # ── the questions ────────────────────────────────────────────────────────────
 
 
-IDS = PY.parent / "coderpad.toml"
+IDS = ROOT / "coderpad.toml"
 
 IDS_HEADER = """# Which question in the CoderPad bank each of ours is.
 #
@@ -262,14 +233,68 @@ def remember_id(title: str, question_id: int) -> None:
 
 
 @dataclass(frozen=True)
-class Question:
-    """One question's worth of the interview, and where each part of it comes from."""
+class Language:
+    """How one language turns a question directory into a pad project.
 
-    title: str
+    The mechanics are the language's; what is k-means about it lives in the question's pad.py.
+    """
+
+    tag: str
     project_template: int
-    solution: Path
-    project: Callable[[], dict[str, str]]
+    solution: str
     readme: Path
+    build: Callable[[Question], dict[str, str]]
+
+
+LANGUAGES: dict[str, Language] = {
+    "py": Language("py", PYTHON_PROJECT, "main.py", ROOT / "src/interview_k/README.md", python_project),
+    "ts": Language("ts", TYPESCRIPT_PROJECT, "main.ts", ROOT / "ts/README.md", typescript_project),
+}
+
+
+@dataclass(frozen=True)
+class Question:
+    """One question in one language, and where each part of it comes from."""
+
+    name: str
+    language: Language
+
+    @property
+    def title(self) -> str:
+        """What the bank calls it. One question per language, so the tag is part of the name.
+
+        The question names its own title because a directory has to be a python package —
+        `k-means` is not — and coderpad.toml keys its ids by title.
+        """
+        return f"{getattr(self.pad, 'TITLE', self.name)} [{self.language.tag}]"
+
+    @property
+    def root(self) -> Path:
+        return QUESTION_ROOT / self.name
+
+    @property
+    def dir(self) -> Path:
+        return self.root / self.language.tag
+
+    @property
+    def packet(self) -> Path:
+        return self.root / "packet.md"
+
+    @property
+    def datasets(self) -> Path:
+        return self.root / "datasets.json"
+
+    @property
+    def solution(self) -> Path:
+        return self.dir / self.language.solution
+
+    @property
+    def pad(self) -> ModuleType:
+        """The question's pad.py — its description, stub openers and `main` templates."""
+        return import_module(f"questions.{self.name}.pad")
+
+    def project(self) -> dict[str, str]:
+        return self.language.build(self)
 
     @property
     def question_id(self) -> int | None:
@@ -284,7 +309,8 @@ class Question:
         """The brief, then this language's library docs. INSTRUCTIONS.md is the problem; the
         README is the reference for the code sitting in the project.
         """
-        return f"{INSTRUCTIONS.read_text().rstrip()}\n\n{PAD_NOTE}\n{_for_the_candidate(self.readme)}\n"
+        brief = (self.root / "INSTRUCTIONS.md").read_text().rstrip()
+        return f"{brief}\n\n{PAD_NOTE}\n{_for_the_candidate(self.language.readme)}\n"
 
     def write(self) -> Path:
         """Lay the project out on disk, from scratch.
@@ -300,22 +326,19 @@ class Question:
         return self.build_root
 
 
-QUESTIONS = (
-    Question(
-        title="k-means [py]",
-        project_template=PYTHON_PROJECT,
-        solution=PY / "main.py",
-        project=python_project,
-        readme=PY / "README.md",
-    ),
-    Question(
-        title="k-means [ts]",
-        project_template=TYPESCRIPT_PROJECT,
-        solution=TS / "main.ts",
-        project=typescript_project,
-        readme=TS / "README.md",
-    ),
-)
+def discover() -> tuple[Question, ...]:
+    """Every question directory, times every language directory inside it.
+
+    A directory is a question once it has a sync.py, and carries a language once it has a
+    subdirectory named for one — so adding either is adding a directory, never editing this.
+    """
+    return tuple(
+        Question(name=question.name, language=LANGUAGES[lang.name])
+        for question in sorted(QUESTION_ROOT.iterdir())
+        if (question / "sync.py").is_file()
+        for lang in sorted(question.iterdir())
+        if lang.is_dir() and lang.name in LANGUAGES
+    )
 
 
 # ── the browser session ──────────────────────────────────────────────────────
@@ -433,7 +456,7 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
     project = question.project()
     fields: dict[str, Any] = {
         "title": question.title,
-        "description": DESCRIPTION,
+        "description": question.pad.DESCRIPTION,
         "solution": question.solution.read_text(),
         "candidateInstructions": [{"instructions": question.instructions(), "defaultVisible": True}],
     }
@@ -445,7 +468,7 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
     else:
         # projectTemplateId and fileContents are both create-only, and between them they are
         # what makes the question a project with our code in it.
-        attributes = fields | {"projectTemplateId": question.project_template, "fileContents": _file_records(project)}
+        attributes = fields | {"projectTemplateId": question.language.project_template, "fileContents": _file_records(project)}
         result = _graphql(CREATE, {"input": {"questionAttributes": attributes}}, cookies, csrf)["createQuestion"]
         verb = "created"
 
@@ -469,19 +492,20 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
 
 
 def main(argv: list[str]) -> int:
-    for question in QUESTIONS:
+    questions = discover()
+    for question in questions:
         root = question.write()
         print(f"wrote {root} — {len(question.project())} files")
 
     if "--push" not in argv:
-        print(f"--push syncs both questions, using the browser cookies in {COOKIE_FILE}")
+        print(f"--push syncs {len(questions)} questions, using the browser cookies in {COOKIE_FILE}")
         return 0
 
-    # One session for both, so a cookie that expires mid-run fails before the second write.
+    # One session for all of them, so a cookie that expires mid-run fails before the next write.
     cookies = _cookies()
     csrf = _csrf_token(cookies)
     recreate = "--recreate" in argv
-    for question in QUESTIONS:
+    for question in questions:
         push(question, cookies, csrf, recreate=recreate)
     return 0
 

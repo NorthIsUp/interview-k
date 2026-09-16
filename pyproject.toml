@@ -2,7 +2,7 @@
 name            = "interview-k"
 version         = "0.1.0"
 description     = "k-means live-coding interview: problem packet, rubric, and a stdlib ASCII scatter helper"
-readme          = "../README.md"
+readme          = "README.md"
 requires-python = ">=3.13"
 license         = { text = "MIT" }
 authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]
@@ -26,7 +26,7 @@ dev = [
 line-length    = 140
 preview        = true
 target-version = "py313"
-extend-exclude = ["**/examples/**", "solutions.py"]   # generated data, not source
+extend-exclude = ["**/examples/**", "**/solutions.py"]   # generated data, not source
 
 lint.extend-select = [
     "A",     # shadowing
@@ -68,6 +68,7 @@ lint.future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "magic-value-comparison"]
+"**/test_*.py" = ["ANN", "magic-value-comparison"]   # each question grades itself in its own directory
 "scripts/**" = ["debugger", "missing-type-function-argument", "missing-return-type-undocumented-public-function", "shebang-not-executable", "shebang-missing-executable-file"]
 
 [tool.pyproject-fmt]
@@ -77,7 +78,7 @@ keep_full_version = false
 
 [tool.pytest.ini_options]
 addopts        = ["-vv", "-ra"]
-pythonpath     = ["."]   # so tests can `from main import kmeans`
+pythonpath     = ["."]   # questions are packages: `from questions.kmeans.py.main import kmeans`
 asyncio_mode   = "auto"
 filterwarnings = [
     "error::pytest.PytestUnknownMarkWarning",
@@ -86,12 +87,12 @@ filterwarnings = [
 ]
 log_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_level  = "DEBUG"
-testpaths  = ["tests"]
+testpaths  = ["tests", "questions"]   # library + tooling, then each question's grading suite
 
 [tool.pyright]
 venv          = ".venv"
 venvPath      = "."
-exclude       = ["**/__pycache__", "**/.venv", "build"]   # build/ holds the generated CoderPad bundle
+exclude       = ["**/__pycache__", "**/.venv", "build", ".claude"]   # build/ holds the generated CoderPad bundle
 pythonVersion = "3.13"
 
 reportConstantRedefinition         = "error"

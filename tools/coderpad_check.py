@@ -27,7 +27,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from tools.coderpad import PRIVATE, QUESTIONS, TS, python_project, typescript_project
+from tools.coderpad import PRIVATE, ROOT, discover
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 # back the extension strip_ts_extension() took off. The pad-shaped tree keeps it off.
 RESTORE_TS = re.compile(r'(from\s+"\./[^"]+)(")')
 
-TSC = TS / "node_modules/.bin/tsc"
+TSC = ROOT / "node_modules/.bin/tsc"
 
 # ts-node's compile, written out. Naming files on the command line is also what makes tsc
 # ignore ts/tsconfig.json — which is nodenext ESM, and would pass what a pad refuses.
@@ -136,28 +136,29 @@ def check_typescript(question: Question) -> None:
     if not TSC.exists():
         raise SystemExit(f"no tsc at {TSC} — run `mise run ts:sync`")
     sources = sorted(str(path) for path in (question.build_root / "src").glob("*.ts"))
-    _run([str(TSC), *PAD_TSC, *sources], TS, "the typescript project does not compile the way a pad compiles it:")
+    _run([str(TSC), *PAD_TSC, *sources], ROOT, "the typescript project does not compile the way a pad compiles it:")
     project = question.project()
     with tempfile.TemporaryDirectory() as tmp:
         _check_targets(project, _lay_out(project, Path(tmp)), typescript_argv)
 
 
-# Keyed on the builder rather than the title, so a question renamed keeps its check and a
-# question added without one stops the run instead of going unchecked.
-CHECKS: dict[Callable[[], dict[str, str]], Callable[[Question], None]] = {
-    python_project: check_python,
-    typescript_project: check_typescript,
+# Keyed on the language rather than the title, so a question renamed keeps its check and a
+# language added without one stops the run instead of going unchecked.
+CHECKS: dict[str, Callable[[Question], None]] = {
+    "py": check_python,
+    "ts": check_typescript,
 }
 
 
 def main() -> int:
-    for question in QUESTIONS:
-        check = CHECKS.get(question.project)
+    questions = discover()
+    for question in questions:
+        check = CHECKS.get(question.language.tag)
         if check is None:
             raise SystemExit(f"no pad check knows how to run {question.title} — add one to CHECKS")
         print(f"{question.title} — {question.write()}")
         check(question)
-    print(f"{len(QUESTIONS)} projects compile and run the way their pads do")
+    print(f"{len(questions)} projects compile and run the way their pads do")
     return 0
 
 

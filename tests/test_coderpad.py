@@ -21,7 +21,7 @@ import pytest
 
 from tools import coderpad
 from tools.coderpad import (
-    QUESTIONS,
+    discover,
     python_project,
     question_ids,
     read_cookie_header,
@@ -46,8 +46,11 @@ def _run_command(project: dict[str, str]) -> list[str]:
     return str(json.loads(project[".cpad"])["targets"]["run"]["command"]).split()
 
 
+PYTHON, TYPESCRIPT = discover()
+
+
 def test_python_project_has_what_the_template_boots() -> None:
-    project = python_project()
+    project = python_project(PYTHON)
     # requirements.txt is not decoration: the template's initCommand pip-installs from it.
     assert {".cpad", "requirements.txt", "src/main.py", "src/datasets.json", "src/dataviz.py"} == set(project)
     assert _run_command(project) == ["python", "src/main.py"]
@@ -57,7 +60,7 @@ def test_python_project_has_what_the_template_boots() -> None:
 
 
 def test_typescript_project_has_what_the_template_boots() -> None:
-    project = typescript_project()
+    project = typescript_project(TYPESCRIPT)
     assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/index.ts", "src/datasets.json"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
@@ -65,7 +68,7 @@ def test_typescript_project_has_what_the_template_boots() -> None:
 
 def test_the_printer_is_library_code_not_the_candidate_s() -> None:
     """`print_clusters` is given to them, so it ships in dataviz — not pasted into their file."""
-    python, typescript = python_project(), typescript_project()
+    python, typescript = python_project(PYTHON), typescript_project(TYPESCRIPT)
 
     assert "def print_clusters" in python["src/dataviz.py"]
     assert "def print_clusters" not in python["src/main.py"]
@@ -84,13 +87,13 @@ def test_underscore_prefixed_files_never_ship() -> None:
     """
     assert shipped({"src/main.py": "", "_scratch.py": "", "src/_tests/test_x.py": "", "src/__init__.py": ""}) == {"src/main.py": ""}
 
-    for project in (python_project(), typescript_project()):
+    for project in (python_project(PYTHON), typescript_project(TYPESCRIPT)):
         assert not [name for name in project if any(part.startswith("_") for part in name.split("/"))]
 
 
 def test_the_python_project_has_no_package_imports_left() -> None:
     """Nothing is a package in the pad — the modules sit next to each other under src/."""
-    for name, text in python_project().items():
+    for name, text in python_project(PYTHON).items():
         assert "interview_k" not in text, f"{name} still reaches for the package"
 
 
@@ -99,18 +102,18 @@ def test_no_import_meta_reaches_the_pad() -> None:
 
     One line of it in dataviz.ts fails the whole Run, so the guard comes off on the way in.
     """
-    for name, text in typescript_project().items():
+    for name, text in typescript_project(TYPESCRIPT).items():
         assert "import.meta" not in text, f"{name} would not compile in a pad"
 
 
 def test_ts_specifiers_lose_their_extension() -> None:
     """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
     assert strip_ts_extension('from "./dataviz.ts";') == 'from "./dataviz";'
-    assert 'from "./dataviz"' in typescript_project()["src/index.ts"]
+    assert 'from "./dataviz"' in typescript_project(TYPESCRIPT)["src/index.ts"]
 
 
 def test_python_project_runs_its_run_target(tmp_path: Path) -> None:
-    project = python_project()
+    project = python_project(PYTHON)
     _lay_out(project, tmp_path)
     _, entry = _run_command(project)
     done = subprocess.run([sys.executable, entry], cwd=tmp_path, capture_output=True, text=True, check=False)
@@ -121,7 +124,7 @@ def test_python_project_runs_its_run_target(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is what runs a TypeScript project")
 def test_typescript_project_runs_its_entry(tmp_path: Path) -> None:
-    _lay_out(typescript_project(), tmp_path)
+    _lay_out(typescript_project(TYPESCRIPT), tmp_path)
     done = subprocess.run(["node", "src/main.ts"], cwd=tmp_path, capture_output=True, text=True, check=False)
 
     assert done.returncode == 0, done.stderr[-2000:]
@@ -130,8 +133,8 @@ def test_typescript_project_runs_its_entry(tmp_path: Path) -> None:
 
 def test_instructions_are_the_brief_plus_the_language_readme() -> None:
     """INSTRUCTIONS.md is the problem; each language README documents the code in the project."""
-    brief = (Path(__file__).parent.parent.parent / "INSTRUCTIONS.md").read_text().rstrip()
-    python, typescript = (question.instructions() for question in QUESTIONS)
+    brief = (Path(__file__).parent.parent / "questions/kmeans/INSTRUCTIONS.md").read_text().rstrip()
+    python, typescript = (question.instructions() for question in discover())
 
     for text in (python, typescript):
         assert brief in text, "the candidate brief goes in whole"
@@ -142,7 +145,7 @@ def test_instructions_are_the_brief_plus_the_language_readme() -> None:
 
 def test_instructions_leave_the_interviewer_half_behind() -> None:
     """A README's Development section is repo commands — including how the candidate is graded."""
-    for question in QUESTIONS:
+    for question in discover():
         text = question.instructions()
         assert "## Development" not in text
         assert "To grade a candidate" not in text
@@ -153,7 +156,7 @@ def test_instructions_leave_the_interviewer_half_behind() -> None:
 def test_every_question_has_an_id_on_file() -> None:
     """A question with no entry is created rather than updated, so a missing one is a duplicate."""
     ids = question_ids()
-    for question in QUESTIONS:
+    for question in discover():
         assert question.title in ids, f"{question.title} has no id in coderpad.toml — a push would make a second copy"
         assert question.question_id == ids[question.title]
 
@@ -172,10 +175,10 @@ def test_the_id_store_round_trips(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
 
 def test_questions_are_the_two_the_interview_ships() -> None:
-    assert [q.title for q in QUESTIONS] == ["k-means [py]", "k-means [ts]"]
+    assert [q.title for q in discover()] == ["k-means [py]", "k-means [ts]"]
     # Project templates, not languages: `multifile_python` is rejected as a language.
-    assert [q.project_template for q in QUESTIONS] == [79, 93]
-    for question in QUESTIONS:
+    assert [q.language.project_template for q in discover()] == [79, 93]
+    for question in discover():
         assert question.solution.exists(), f"{question.title} has no reference solution at {question.solution}"
 
 

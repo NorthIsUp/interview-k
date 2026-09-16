@@ -10,9 +10,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { DATASETS, TWENTY } from "../src/index.ts";
-import { show, type Centroid, type Point } from "../src/dataviz.ts";
-import { capture } from "./capture.ts";
+import { DATASETS, TWENTY } from "./datasets.ts";
+import { show, type Centroid, type Point } from "../../../ts/src/dataviz.ts";
+import { capture } from "../../../ts/test/capture.ts";
 
 interface Fixture {
   renders: Record<string, string>;

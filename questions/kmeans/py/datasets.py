@@ -5,7 +5,7 @@ TWENTY is a literal you can read at a glance and check by hand: 20 integer point
 different way, so they double as the failure-mode probes — 1000 points each except
 uniform, which is 100:
 
-Run this (`mise run datasets`) to regenerate datasets.json, which is what everything else
+Run this (`mise run sync kmeans`) to regenerate datasets.json, which is what everything else
 reads. Nothing imports this module; the JSON is the interface.
 
     blobs       three well-separated clusters — the baseline that should just work
@@ -26,8 +26,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from interview_k.dataviz import Centroid, Point
 
-# repo root, not py/: the TypeScript port reads the same file
-OUT = Path(__file__).parent.parent.parent / "datasets.json"
+# the question root, not py/: the TypeScript port reads the same file
+OUT = Path(__file__).parent.parent / "datasets.json"
 
 TWENTY: list[Point] = [
     (10, 15),
