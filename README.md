@@ -16,7 +16,7 @@ might be typing.
 | `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
 | `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
 | `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
-| `tests/` | library and tooling tests; each question grades itself in its own directory |
+| `*_test.py` | each suite sits beside what it tests; questions grade themselves in their own directories |
 
 ## A question directory
 
@@ -26,18 +26,21 @@ becomes a question the moment it has one.
 
 | path | what |
 |---|---|
-| `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
-| `packet.md` | interviewer packet: problem, rubric, hint ladder, timeline |
+| `common/README.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
+| `_packet.md` | interviewer packet: problem, rubric, hint ladder, timeline. `_` means it never ships to a pad |
 | `pad.py` | this question's pad title, description and `main` templates |
 | `sync.py` | regenerates everything generated here; the whole contract |
 | `py/` `ts/` | one directory per language — reference solution, generators, tests |
-| `datasets.json` `answers.md` | generated; both languages read the data |
+| `common/data.json` | generated but committed; both languages read it |
 
 A language directory holds that language's `main` (the reference solution — swap
 in a candidate's to grade theirs) and its tests. Python adds the generators
-(`datasets.py`, `answers.py`, `ts_fixture.py`) and the generated `solutions.py`;
-TypeScript adds `datasets.ts` and the generated `parity.json` that holds the port
-to Python's output.
+(`datasets.py`, `answers.py`, `ts_fixture.py`); TypeScript adds `datasets.ts`.
+
+Everything derived lands in `build/<name>/`, which is gitignored — `solutions.json`
+(the expected output per dataset), `answers.md` (the key as markdown) and
+`parity.json` (the fixture holding the TS port to Python's output). `mise run test`
+depends on `sync`, so they are there before anything reads them.
 
 Adding a language to a question is adding a directory named for it. Adding a
 question is adding a directory with a `sync.py`. Neither edits a registry —
@@ -58,7 +61,7 @@ def kmeans(X, k):
 
 Plenty is left unspecified on purpose. Ask.
 
-`questions/kmeans/INSTRUCTIONS.md` is the version a candidate sees — keep the two
+`questions/kmeans/common/README.md` is the version a candidate sees — keep the two
 in step.
 
 ## Development

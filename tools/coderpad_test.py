@@ -132,8 +132,8 @@ def test_typescript_project_runs_its_entry(tmp_path: Path) -> None:
 
 
 def test_instructions_are_the_brief_plus_the_language_readme() -> None:
-    """INSTRUCTIONS.md is the problem; each language README documents the code in the project."""
-    brief = (Path(__file__).parent.parent / "questions/kmeans/INSTRUCTIONS.md").read_text().rstrip()
+    """common/README.md is the problem; each language README documents the code in the project."""
+    brief = (Path(__file__).parent.parent / "questions/kmeans/common/README.md").read_text().rstrip()
     python, typescript = (question.instructions() for question in discover())
 
     for text in (python, typescript):

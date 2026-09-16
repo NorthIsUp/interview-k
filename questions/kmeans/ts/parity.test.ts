@@ -3,7 +3,7 @@
  * `py/tools/ts_fixture.py`; a failure here means show() drifted from the original.
  *
  * The datasets themselves are no longer compared: both languages read the same
- * datasets.json, so there is nothing left to disagree about.
+ * common/data.json, so there is nothing left to disagree about.
  */
 
 import assert from "node:assert/strict";
@@ -18,7 +18,7 @@ interface Fixture {
   renders: Record<string, string>;
 }
 
-const fixture: Fixture = JSON.parse(readFileSync(new URL("./parity.json", import.meta.url), "utf8"));
+const fixture: Fixture = JSON.parse(readFileSync(new URL("../../../build/kmeans/parity.json", import.meta.url), "utf8"));
 
 
 

@@ -1,4 +1,4 @@
-/** The TS twin of `tests/test_library.py`, test for test. */
+/** The TS twin of `src/interview_k/dataviz_test.py`, test for test. */
 
 import assert from "node:assert/strict";
 import test from "node:test";

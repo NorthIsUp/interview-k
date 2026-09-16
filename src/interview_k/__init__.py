@@ -1,4 +1,4 @@
-"""k-means interview helpers. The datasets are datasets.json, not an import."""
+"""k-means interview helpers. The datasets are common/data.json, not an import."""
 
 from __future__ import annotations
 

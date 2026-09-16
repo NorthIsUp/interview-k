@@ -1,6 +1,6 @@
 """The datasets are what every other check here rests on, so their shape is asserted.
 
-Sizes, ranges and spans — not the points themselves, which are `datasets.json`. A failure
+Sizes, ranges and spans — not the points themselves, which are `common/data.json`. A failure
 here means `datasets.py` drifted from what packet.md tells the interviewer to expect.
 """
 
@@ -11,9 +11,8 @@ from pathlib import Path
 
 Point = tuple[int, int]
 
-DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points] for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
-}
+DATA = Path(__file__).parent.parent / "common" / "data.json"
+DATASETS: dict[str, list[Point]] = {name: [(x, y) for x, y in points] for name, points in json.loads(DATA.read_text()).items()}
 TWENTY = DATASETS["TWENTY"]
 UNIFORM = DATASETS["UNIFORM"]
 

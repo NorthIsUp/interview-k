@@ -354,7 +354,7 @@ failure-mode probes, so you can *show* a failure instead of describing it.
 | `unscaled` | y spans ~1000x x — Euclidean distance sees only y until you standardize |
 | `uniform` | 100 points, **no clusters at all** — k-means still returns k of them |
 
-The points themselves are this question's `datasets.json` — generated once by
+The points themselves are this question's `common/data.json` — generated once by
 `py/datasets.py` (`mise run sync kmeans`) and read by both languages, the tests, the
 answer key and both pads. Nothing regenerates them, so nothing can disagree about them:
 
@@ -385,11 +385,11 @@ fails on it** — a plot normalizing away the exact problem the metric has. Wort
 
 #### Grading harness
 
-`tests/test_solutions.py` grades a solution against all seven datasets:
+`py/test_solutions.py` grades a solution against all seven datasets:
 
 ```sh
-uv run pytest tests/test_solutions.py                    # grades reference/main.py
-KMEANS_SOLUTION=~/their/main.py uv run pytest tests/test_solutions.py
+uv run pytest questions/kmeans/py/test_solutions.py                    # grades reference/main.py
+KMEANS_SOLUTION=~/their/main.py uv run pytest questions/kmeans/py/test_solutions.py
 ```
 
 It asserts the k-means **fixed-point conditions** rather than an expected answer, because
@@ -414,7 +414,7 @@ in conversation; the harness will not do it for you.
 
 #### Answer key
 
-`answers.md`, beside this file, holds the reference output — regenerate with
+`build/kmeans/answers.md` holds the reference output — regenerate with
 `mise run sync kmeans`. It takes the best of 40 k-means++ restarts,
 so it is the global optimum rather than one run's local minimum, and it is reproducible.
 

@@ -1,10 +1,13 @@
 """Regenerate every generated file in this question. `mise run sync kmeans` runs this.
 
-    datasets.json    the data both languages read
-    py/solutions.py  expected kmeans() output per dataset
-    answers.md       the answer key, as markdown
-    ts/parity.json   the fixture holding the TypeScript port to Python's output
-    packet.md        library + generator source re-embedded, so the two cannot drift
+    common/data.json      the data both languages read — source, committed
+    _packet.md            library source re-embedded, so the two cannot drift — source, committed
+
+Everything derived lands in build/<question>/, which is gitignored:
+
+    solutions.json  expected kmeans() output per dataset
+    answers.md      the answer key, as markdown
+    parity.json     the fixture holding the TypeScript port to Python's output
 
 The packet hands candidates code to paste into a pad, where there is no installed package —
 so the embedded copy imports from the pasted module rather than from `interview_k`. That
@@ -21,7 +24,8 @@ from questions.kmeans.py import answers, datasets, ts_fixture
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
-PACKET = HERE / "packet.md"
+PACKET = HERE / "_packet.md"
+BUILD = ROOT / "build" / HERE.name
 PASTE_IMPORT = ("from interview_k.dataviz import Centroid, Point", "from dataviz import Centroid, Point")
 
 
@@ -52,9 +56,9 @@ def _sync_packet() -> int:
 def main() -> int:
     datasets.main()
     # each of these reads what the previous one wrote, so the order is the dependency order
-    answers.write_solutions(HERE / "py/solutions.py")
-    answers.write_answers(HERE / "answers.md")
-    print("wrote py/solutions.py, answers.md")
+    answers.write_solutions(BUILD / "solutions.json")
+    answers.write_answers(BUILD / "answers.md")
+    print(f"wrote {BUILD}/solutions.json, answers.md")
     ts_fixture.main()
     return _sync_packet()
 

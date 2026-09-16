@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import importlib
 import io
 import json
 from pathlib import Path
@@ -25,13 +24,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from interview_k.dataviz import Centroid, Point, show
-from questions.kmeans.py import solutions
 
 QUESTION = Path(__file__).parent.parent
-FIXTURE = QUESTION / "ts" / "parity.json"
+BUILD = QUESTION.parent.parent / "build" / QUESTION.name
+FIXTURE = BUILD / "parity.json"
 
 DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points] for name, points in json.loads((QUESTION / "datasets.json").read_text()).items()
+    name: [(x, y) for x, y in points] for name, points in json.loads((QUESTION / "common" / "data.json").read_text()).items()
 }
 TWENTY = DATASETS["TWENTY"]
 
@@ -78,12 +77,11 @@ def rendered(draw: Callable[[], None]) -> str:
 
 
 def main() -> int:
-    # sync.py rewrites solutions.py in this same process, so the module we imported is stale
-    importlib.reload(solutions)
+    solutions = json.loads((BUILD / "solutions.json").read_text())
     # Same normalisation test_solutions.py applies: ordering is not part of the contract.
     answers: dict[str, AnswerFixture] = {}
-    for name, clusters in solutions.ANSWERS.items():
-        groups = normalised(clusters)
+    for name, clusters in solutions["ANSWERS"].items():
+        groups = normalised([((cx, cy), [(x, y) for x, y in pts]) for (cx, cy), pts in clusters])
         answers[name] = {
             "inertia": sum((x - cx) ** 2 + (y - cy) ** 2 for (cx, cy), points in groups for x, y in points),
             "centroids": [[centroid[0], centroid[1]] for centroid, _ in groups],
@@ -97,10 +95,11 @@ def main() -> int:
             "identical": rendered(lambda: show(points=[(2, 2)] * 5, width=20, height=5)),
             "blobs": rendered(lambda: show(points=DATASETS["BLOBS"], width=60, height=16, title="blobs")),
         },
-        "k": solutions.K,
+        "k": solutions["K"],
         "answers": answers,
     }
 
+    FIXTURE.parent.mkdir(parents=True, exist_ok=True)
     FIXTURE.write_text(json.dumps(fixture, indent=2) + "\n")
     print(f"wrote {FIXTURE} — {len(fixture['renders'])} renders, {len(fixture['answers'])} answers")
     return 0

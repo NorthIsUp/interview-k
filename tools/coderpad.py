@@ -95,7 +95,8 @@ def shipped(project: dict[str, str]) -> dict[str, str]:
 
 def python_project(question: Question) -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    files = {f"src/{path.name}": path.read_text() for path in (ROOT / "src/interview_k").glob("*.py")}
+    # the suite sits beside the library it tests; a pad is not where it belongs
+    files = {f"src/{path.name}": path.read_text() for path in (ROOT / "src/interview_k").glob("*.py") if not path.stem.endswith("_test")}
 
     stub = _stub(question.packet, "python", question.pad.PY_OPENER)
     # The packet's stub carries its own Sequence import; main.py already has one.
@@ -137,12 +138,12 @@ def strip_entry_guard(source: str) -> str:
 
 
 def flatten_json_import(source: str) -> str:
-    """In the pad there is no questions/<name>/ts to sit in: datasets.json is beside datasets.ts.
+    """In the pad there is no questions/<name>/common to reach into: the data is beside datasets.ts.
 
     `import.meta` goes with it — a pad compiles CommonJS, where it does not exist — so the
     path becomes the plain string the Run button's working directory resolves.
     """
-    return re.sub(r'new URL\("(?:\.\./)+datasets\.json", import\.meta\.url\)', '"src/datasets.json"', source)
+    return re.sub(r'new URL\("(?:\.\./)+common/data\.json", import\.meta\.url\)', '"src/datasets.json"', source)
 
 
 # A question's TS reaches the shared library by relative path; a pad has every file in one
@@ -278,11 +279,11 @@ class Question:
 
     @property
     def packet(self) -> Path:
-        return self.root / "packet.md"
+        return self.root / "_packet.md"
 
     @property
     def datasets(self) -> Path:
-        return self.root / "datasets.json"
+        return self.root / "common" / "data.json"
 
     @property
     def solution(self) -> Path:
@@ -306,10 +307,10 @@ class Question:
         return BUILD / self.title.replace(" ", "_")
 
     def instructions(self) -> str:
-        """The brief, then this language's library docs. INSTRUCTIONS.md is the problem; the
+        """The brief, then this language's library docs. common/README.md is the problem; the
         README is the reference for the code sitting in the project.
         """
-        brief = (self.root / "INSTRUCTIONS.md").read_text().rstrip()
+        brief = (self.root / "common" / "README.md").read_text().rstrip()
         return f"{brief}\n\n{PAD_NOTE}\n{_for_the_candidate(self.language.readme)}\n"
 
     def write(self) -> Path:

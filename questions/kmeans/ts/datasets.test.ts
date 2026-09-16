@@ -1,7 +1,7 @@
 /**
  * The datasets are what every other check here rests on, so their shape is asserted.
  *
- * Sizes, ranges and spans — not the points themselves, which are `datasets.json`. The
+ * Sizes, ranges and spans — not the points themselves, which are `common/data.json`. The
  * Python side asserts the same things in `py/test_datasets.py`, over the same file.
  */
 

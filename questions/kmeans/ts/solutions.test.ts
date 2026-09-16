@@ -3,7 +3,7 @@
  *
  * Not point for point: the two languages no longer share a random number stream, so they
  * reach different — equally converged — local minima. What is checked is what is actually
- * claimed, and it is what `py/tests/test_solutions.py` checks of a candidate: every point
+ * claimed, and it is what `py/test_solutions.py` checks of a candidate: every point
  * assigned once, no empty cluster, each centroid the mean of its own points, and a cost
  * within 1.25x of the reference optimum.
  */
@@ -21,7 +21,7 @@ interface Fixture {
   answers: Record<string, { inertia: number; centroids: [number, number][] }>;
 }
 
-const fixture: Fixture = JSON.parse(readFileSync(new URL("./parity.json", import.meta.url), "utf8"));
+const fixture: Fixture = JSON.parse(readFileSync(new URL("../../../build/kmeans/parity.json", import.meta.url), "utf8"));
 const all: Record<string, Point[]> = DATASETS;
 
 const d2 = (a: readonly [number, number], b: readonly [number, number]): number => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;

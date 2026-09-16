@@ -26,7 +26,7 @@ dev = [
 line-length    = 140
 preview        = true
 target-version = "py313"
-extend-exclude = ["**/examples/**", "**/solutions.py"]   # generated data, not source
+extend-exclude = ["**/examples/**"]
 
 lint.extend-select = [
     "A",     # shadowing
@@ -67,7 +67,7 @@ lint.flake8-type-checking.runtime-evaluated-base-classes = [
 lint.future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ANN", "magic-value-comparison"]
+"**/*_test.py" = ["ANN", "magic-value-comparison"]
 "**/test_*.py" = ["ANN", "magic-value-comparison"]   # each question grades itself in its own directory
 "scripts/**" = ["debugger", "missing-type-function-argument", "missing-return-type-undocumented-public-function", "shebang-not-executable", "shebang-missing-executable-file"]
 
@@ -77,9 +77,8 @@ indent            = 4
 keep_full_version = false
 
 [tool.pytest.ini_options]
-addopts        = ["-vv", "-ra"]
+addopts        = ["-vv", "-ra", "--import-mode=importlib"]
 pythonpath     = ["."]   # questions are packages: `from questions.kmeans.py.main import kmeans`
-asyncio_mode   = "auto"
 filterwarnings = [
     "error::pytest.PytestUnknownMarkWarning",
     "ignore::DeprecationWarning",
@@ -87,7 +86,7 @@ filterwarnings = [
 ]
 log_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_level  = "DEBUG"
-testpaths  = ["tests", "questions"]   # library + tooling, then each question's grading suite
+testpaths  = ["src", "tools", "questions"]   # each suite sits beside what it tests
 
 [tool.pyright]
 venv          = ".venv"

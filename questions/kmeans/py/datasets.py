@@ -1,11 +1,11 @@
-"""Generate datasets.json for the k-means interview. Stdlib only, deterministic, integer coordinates.
+"""Generate common/data.json for the k-means interview. Stdlib only, deterministic, integer coordinates.
 
 TWENTY is a literal you can read at a glance and check by hand: 20 integer points in
 [0, 100], three obvious clusters of 7/6/7. The generated sets each break k-means a
 different way, so they double as the failure-mode probes — 1000 points each except
 uniform, which is 100:
 
-Run this (`mise run sync kmeans`) to regenerate datasets.json, which is what everything else
+Run this (`mise run sync kmeans`) to regenerate common/data.json, which is what everything else
 reads. Nothing imports this module; the JSON is the interface.
 
     blobs       three well-separated clusters — the baseline that should just work
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from interview_k.dataviz import Centroid, Point
 
 # the question root, not py/: the TypeScript port reads the same file
-OUT = Path(__file__).parent.parent / "datasets.json"
+OUT = Path(__file__).parent.parent / "common" / "data.json"
 
 TWENTY: list[Point] = [
     (10, 15),

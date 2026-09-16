@@ -22,7 +22,6 @@ from pathlib import Path
 import pytest
 
 from questions.kmeans.py.main import kmeans
-from questions.kmeans.py.solutions import ANSWERS, K
 
 # spelled out rather than imported, so grading a candidate's main.py needs nothing but this file
 Point = tuple[int, int]
@@ -31,9 +30,15 @@ Clusters = list[tuple[Centroid, list[Point]]]
 Solved = tuple[str, list[Point], Clusters]
 
 
-DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points] for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
+# the answer key is generated, so it lives in build/ rather than beside the source
+SOLUTIONS = json.loads((Path(__file__).parent.parent.parent.parent / "build" / "kmeans" / "solutions.json").read_text())
+K: int = SOLUTIONS["K"]
+ANSWERS: dict[str, Clusters] = {
+    name: [((cx, cy), [(x, y) for x, y in pts]) for (cx, cy), pts in clusters] for name, clusters in SOLUTIONS["ANSWERS"].items()
 }
+
+DATA = Path(__file__).parent.parent / "common" / "data.json"
+DATASETS: dict[str, list[Point]] = {name: [(x, y) for x, y in points] for name, points in json.loads(DATA.read_text()).items()}
 
 
 def _d2(a: tuple[float, float], b: tuple[float, float]) -> float:

@@ -57,10 +57,12 @@ depends     = ["py:test", "ts:test"]
 
 [tasks."py:test"]
 description = "Run python tests — the library, the tooling, and every question's grading suite"
+depends     = ["sync"]
 run         = "uv run pytest"
 
 [tasks."ts:test"]
 description = "Run typescript tests — the library and every question's port"
+depends     = ["sync"]
 dir         = "ts"
 run         = "node --test test/*.test.ts ../questions/*/ts/*.test.ts"
 
@@ -98,25 +100,3 @@ run = 'uv run python -m tools.coderpad ${usage_push:+--push} ${usage_recreate:+-
 [tasks."coderpad:test"]
 description = "Check every CoderPad project compiles and runs the way its pad does — offline"
 run         = "uv run python -m tools.coderpad_check"
-
-# ── release ─────────────────────────────────────────────────────────────────
-
-[tasks.build]
-description = "Build wheel + sdist"
-run         = "uv build"
-
-[tasks.version]
-description = "Print current version"
-run         = "uv version --short"
-
-[tasks.bump-patch]
-description = "Bump patch version"
-run         = "uv version --bump patch"
-
-[tasks.bump-minor]
-description = "Bump minor version"
-run         = "uv version --bump minor"
-
-[tasks.bump-major]
-description = "Bump major version"
-run         = "uv version --bump major"

@@ -1,6 +1,6 @@
 # interview-k — Python
 
-The candidate-facing half is `src/interview_k/dataviz.py` plus the question's `datasets.json`, stdlib only.
+The candidate-facing half is `src/interview_k/dataviz.py` plus the question's `common/data.json`, stdlib only.
 
 ## `show()` — ASCII scatter, stdlib only
 
@@ -46,7 +46,7 @@ order and point order are not part of the contract — sorting inside `kmeans` i
 
 ## The datasets
 
-Seven of them, in `questions/kmeans/datasets.json`: `TWENTY`, `BLOBS`, `TIGHT`,
+Seven of them, in `questions/kmeans/common/data.json`: `TWENTY`, `BLOBS`, `TIGHT`,
 `LOPSIDED`, `ELONGATED`, `UNSCALED`, `UNIFORM`. Integer coordinates throughout.
 No import and no package — the TypeScript side reads the same file:
 
