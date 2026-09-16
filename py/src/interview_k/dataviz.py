@@ -38,8 +38,13 @@ MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv
 UNLABELED = "·"
 BLANK = " "
 
-Point = tuple[int | float, int | float]
-Centroid = Point
+
+# Plain tuples — no constructor to import, nothing to convert. The int/float split is
+# the domain: data points are integral (pixels, counts, ages), a centroid is a mean and
+# rarely is. By the numeric tower a Point is accepted wherever a Centroid is expected,
+# but not the reverse — so a mean can never be mistaken for a data point.
+Point = tuple[int, int]
+Centroid = tuple[float, float]
 
 Cell = tuple[int, int]  # (row, col) into the character grid
 
@@ -152,36 +157,10 @@ def _demo() -> None:
     left = [p for p in quad if p[0] < 0]
     right = [p for p in quad if p[0] >= 0]
 
-<<<<<<<< HEAD:src/interview_k/dataviz.py
-    show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(
-        left,
-        right,
-        centroids=[(-10.0, -20.0), (10.0, -20.0)],
-        width=44,
-        height=8,
-        title="two groups + centroids",
-    )
-    show(
-        (p for p in left),
-        (p for p in right),
-        width=44,
-        height=8,
-        title="generators — safe, show() is single-pass",
-    )
-    show(
-        quad,
-        centroids=[(0.0, float("nan"))],
-        width=44,
-        height=8,
-        title="nan centroid does not crash",
-    )
-========
     show(points=quad, width=44, height=8, title="one group -> unlabeled")
     show([left, right], [(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
     show([(p for p in left), (p for p in right)], width=44, height=8, title="generators — safe, show() is single-pass")
     show([quad], [(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
->>>>>>>> worktree-ts-port:py/src/interview_k/dataviz.py
     show(width=44)
 
     try:
@@ -192,18 +171,8 @@ def _demo() -> None:
         rng = np.random.default_rng(1)
         arr = rng.normal(0, 20, (80, 2))
         pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
-<<<<<<<< HEAD:src/interview_k/dataviz.py
-        mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
-        show(
-            *mid,
-            centroids=[(-20.0, 0.0), (20.0, 0.0)],
-            width=44,
-            title="from an ndarray",
-        )
-========
         mid = [[p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]]
         show(mid, [(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
->>>>>>>> worktree-ts-port:py/src/interview_k/dataviz.py
 
 
 if __name__ == "__main__":
