@@ -2,7 +2,7 @@
 name            = "interview-k"
 version         = "0.1.0"
 description     = "k-means live-coding interview: problem packet, rubric, and a stdlib ASCII scatter helper"
-readme          = "README.md"
+readme          = "../README.md"
 requires-python = ">=3.13"
 license         = { text = "MIT" }
 authors         = [{ name = "Adam Hitchcock", email = "adam@northisup.com" }]
@@ -91,8 +91,7 @@ testpaths  = ["tests"]
 [tool.pyright]
 venv          = ".venv"
 venvPath      = "."
-# .claude holds git worktrees — other branches' copies of this tree, checked by their own run
-exclude       = ["**/__pycache__", "**/.venv", ".claude"]
+exclude       = ["**/__pycache__", "**/.venv", "build"]   # build/ holds the generated CoderPad bundle
 pythonVersion = "3.13"
 
 reportConstantRedefinition         = "error"

@@ -7,7 +7,7 @@ minima. What is well defined is the *global* optimum, so this takes the best of 
 k-means++ restarts by inertia. With fixed data and a fixed seed the result is reproducible,
 which is what makes a candidate's output diffable against it.
 
-    uv run python tools/answers.py > docs/answers.md
+    uv run python tools/answers.py > ../docs/answers.md   # from py/
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import json
 import pathlib
 import random
 
-from interview_k.dataviz import Centroid, Point, show
+from interview_k.dataviz import Centroid, Point, print_clusters, show
 
 K = 3
 N_INIT = 40
@@ -25,7 +25,7 @@ SEED = 0
 
 DATASETS: dict[str, list[Point]] = {
     name: [(x, y) for x, y in points]
-    for name, points in json.loads((pathlib.Path(__file__).parent.parent / "datasets.json").read_text()).items()
+    for name, points in json.loads((pathlib.Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
 }
 _ALL: list[tuple[str, list[Point]]] = list(DATASETS.items())
 
@@ -66,13 +66,6 @@ def solve(points: list[Point], k: int) -> list[tuple[Centroid, list[Point]]]:
     """Best of N_INIT restarts by inertia — the global optimum, for practical purposes."""
     rng = random.Random(SEED)
     return min((_lloyd(points, k, rng) for _ in range(N_INIT)), key=_inertia)
-
-
-def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
-    for centroid, pts in sorted(clusters):
-        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
-        cx, cy = centroid
-        print(f"({cx:.4g}, {cy:.4g}): {coords}")
 
 
 READING = {
@@ -174,8 +167,8 @@ if __name__ == "__main__":
     print("```text")
     elongated_answer = solve(DATASETS["ELONGATED"], 3)
     show(
-        *[pts for _, pts in elongated_answer],
-        centroids=[c for c, _ in elongated_answer],
+        [pts for _, pts in elongated_answer],
+        [c for c, _ in elongated_answer],
         width=56,
         height=12,
         title="lowest-inertia answer — three wedges, not three bars",

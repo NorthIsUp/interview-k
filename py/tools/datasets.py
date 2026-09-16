@@ -26,7 +26,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from interview_k.dataviz import Centroid, Point
 
-OUT = Path(__file__).parent.parent / "datasets.json"
+# repo root, not py/: the TypeScript port reads the same file
+OUT = Path(__file__).parent.parent.parent / "datasets.json"
 
 TWENTY: list[Point] = [
     (10, 15),

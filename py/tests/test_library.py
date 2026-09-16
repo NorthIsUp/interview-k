@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 from interview_k import Centroid, Point, show
 
-if TYPE_CHECKING:
-    import pytest
-
 DATASETS: dict[str, list[Point]] = {
-    name: [(x, y) for x, y in points] for name, points in json.loads((Path(__file__).parent.parent / "datasets.json").read_text()).items()
+    name: [(x, y) for x, y in points]
+    for name, points in json.loads((Path(__file__).parent.parent.parent / "datasets.json").read_text()).items()
 }
 TWENTY = DATASETS["TWENTY"]
 UNIFORM = DATASETS["UNIFORM"]
@@ -27,14 +26,14 @@ def test_point_and_centroid_are_plain_tuples() -> None:
 
 
 def test_single_group_is_unlabeled(capsys: pytest.CaptureFixture[str]) -> None:
-    show(SQUARE, width=20, height=5)
+    show(points=SQUARE, width=20, height=5)
     out = capsys.readouterr().out
     assert "·" in out
     assert "●" not in out
 
 
 def test_groups_get_distinct_marks(capsys: pytest.CaptureFixture[str]) -> None:
-    show(SQUARE[:2], SQUARE[2:], width=20, height=5)
+    show([SQUARE[:2], SQUARE[2:]], width=20, height=5)
     out = capsys.readouterr().out
     assert "●" in out
     assert "▲" in out
@@ -42,13 +41,13 @@ def test_groups_get_distinct_marks(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_centroids_render_as_digits(capsys: pytest.CaptureFixture[str]) -> None:
-    show(SQUARE[:2], SQUARE[2:], centroids=[(0, 0.5), (1, 0.5)], width=20, height=5)
+    show([SQUARE[:2], SQUARE[2:]], [(0, 0.5), (1, 0.5)], width=20, height=5)
     assert "0" in capsys.readouterr().out
 
 
 def test_non_finite_centroid_is_counted_not_raised(capsys: pytest.CaptureFixture[str]) -> None:
     # only a centroid can be nan — it is a mean, and mean() of an empty cluster is nan
-    show(SQUARE, centroids=[(float("nan"), 0.0)], width=20, height=5)
+    show([SQUARE], [(float("nan"), 0.0)], width=20, height=5)
     assert "1 point(s) unusable" in capsys.readouterr().out
 
 
@@ -58,20 +57,26 @@ def test_no_points_does_not_raise(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_accepts_a_generator(capsys: pytest.CaptureFixture[str]) -> None:
-    show((p for p in SQUARE), width=20, height=5)
+    show(points=(p for p in SQUARE), width=20, height=5)
     assert "·" in capsys.readouterr().out
 
 
 def test_explicit_size_is_honored(capsys: pytest.CaptureFixture[str]) -> None:
-    show(SQUARE, width=30, height=7)
+    show(points=SQUARE, width=30, height=7)
     lines = capsys.readouterr().out.splitlines()
     assert len(lines) == 9  # 7 rows + 2 rules
     assert all(len(line) >= 31 for line in lines)
 
 
 def test_degenerate_all_points_identical(capsys: pytest.CaptureFixture[str]) -> None:
-    show([(2, 2)] * 5, width=20, height=5)  # zero span must not divide by zero
+    show(points=[(2, 2)] * 5, width=20, height=5)  # zero span must not divide by zero
     assert "·" in capsys.readouterr().out
+
+
+def test_bare_point_list_is_rejected() -> None:
+    # show(SQUARE) reads as four clusters of two numbers — say so instead of plotting noise
+    with pytest.raises(TypeError, match="list of clusters"):
+        show(SQUARE)  # type: ignore[arg-type]
 
 
 def test_twenty_is_hand_checkable() -> None:

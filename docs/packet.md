@@ -38,21 +38,32 @@ def kmeans(points: Sequence[Point], k: int, max_iter: int = 100) -> list[tuple[C
     """
     ...
 
-
-def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
-    """One line per cluster: `centroid: points`."""
-    for centroid, pts in sorted(clusters):
-        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
-        cx, cy = centroid
-        print(f"({cx:.4g}, {cy:.4g}): {coords}")
 ```
 
-`print_clusters` is given to them.
+`print_clusters` / `printClusters` is given to them, in the `dataviz` module beside their file.
 
 ```
 (0, 8.5): (0,8)
 (1.9, 2.6): (1,2),(2,3),(3,3)
 (8.048, 8.5): (8,8),(8,9)
+```
+
+The TypeScript half of the repo hands them the same thing. `Point` and `Centroid` are
+already defined by `show()`, so the stub does not redeclare them:
+
+```typescript
+type Cluster = [Centroid, Point[]];
+
+/**
+ * Cluster points into k groups.
+ *
+ * k: number of clusters, 1 <= k <= points.length
+ *
+ * Returns one [centroid, its points] pair per cluster.
+ */
+function kmeans(points: readonly Point[], k: number, maxIter = 100): Cluster[] {
+  throw new Error("not implemented");
+}
 ```
 
 **Order is not graded** — not cluster order, not point order. `print_clusters` sorts so runs
@@ -96,17 +107,24 @@ and drops non-finite coordinates with a count instead of raising — so a `nan` 
 plots and reports `1 point(s) unusable`.
 
 ```python
-show(points)  # one group -> every point is '·'
-show(*clusters)  # one mark per group, in argument order
-show(*clusters, centroids=C)  # centroids overlaid as their group's digit
+show(points=pts)  # one group -> every point is '·'
+show(clusters)  # one mark per group, in list order
+show(clusters, C)  # centroids overlaid as their group's digit
 ```
 
 ```python
-"""ASCII scatter plot for the k-means interview. Stdlib only.
+"""Looking at an answer: the ASCII scatter plot and the one-line-per-cluster dump.
 
-    show(points)                  -> every point is '·'
-    show(*clusters)               -> one mark per group, in argument order
-    show(*clusters, centroids=C)  -> centroids overlaid as their group's digit
+`dataviz` is the name the brief gives the candidate, and the pad puts this module beside
+their solution rather than pasting it into it.
+
+
+    show(points=pts)              -> every point is '·'
+    show(clusters)                -> one mark per group, in list order
+    show(clusters, C)             -> centroids overlaid as their group's digit
+
+`clusters` is a list of groups, so a single group is `show(points=pts)` — passing one bare
+list of points is the easy mistake and raises rather than plotting nonsense.
 
 A group is any iterable of Point — a list, a generator, whatever. `Iterable` rather than
 `Sequence` is deliberate and the opposite of kmeans(): show() makes exactly one pass and
@@ -129,14 +147,19 @@ from shutil import get_terminal_size
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
 MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
 UNLABELED = "·"
 BLANK = " "
 
-Point = tuple[int | float, int | float]
-Centroid = Point
+
+# Plain tuples — no constructor to import, nothing to convert. The int/float split is
+# the domain: data points are integral (pixels, counts, ages), a centroid is a mean and
+# rarely is. By the numeric tower a Point is accepted wherever a Centroid is expected,
+# but not the reverse — so a mean can never be mistaken for a data point.
+Point = tuple[int, int]
+Centroid = tuple[float, float]
 
 Cell = tuple[int, int]  # (row, col) into the character grid
 
@@ -177,30 +200,43 @@ def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Ce
     return cell
 
 
-def show(
-    *groups: Iterable[Point],
+def _groups(clusters: Sequence[Iterable[Point]], points: Iterable[Point] | None) -> Sequence[Iterable[Point]]:
+    """Resolve the two call shapes, and catch the one that would silently plot nonsense."""
+    if points is not None:
+        return [points]
+    first = clusters[0] if clusters else None
+    # a non-empty tuple of numbers is a Point, so it is a bare point list, not a cluster list
+    if isinstance(first, tuple) and first and all(isinstance(v, (int, float)) for v in first):
+        raise TypeError("show() takes a list of clusters — use show(points=pts) for one group, show([a, b]) for several")
+    return clusters
+
+
+def show(  # ruff: ignore[too-many-arguments] — width/height/title are plotting knobs, keyword-only and defaulted
+    clusters: Sequence[Iterable[Point]] = (),
     centroids: Iterable[Centroid] | None = None,
+    *,
+    points: Iterable[Point] | None = None,
     height: int = 0,
     width: int = 0,
     title: str = "",
 ) -> None:
     """Print an ASCII scatter, one mark per group. See the module docstring."""
-    clusters = [_finite(group) for group in groups]
+    groups = [_finite(group) for group in _groups(clusters, points)]
     centers, dropped = _finite(centroids if centroids is not None else ())
-    dropped += sum(n for _, n in clusters)
-    points = [point for group, _ in clusters for point in group]
+    dropped += sum(n for _, n in groups)
+    plotted = [point for group, _ in groups for point in group]
 
-    if not points and not centers:
+    if not plotted and not centers:
         print(f"(nothing to plot — {dropped} unusable)" if dropped else "(no points)")
         return
 
     width, height = _terminal_box(width, height)
-    cell_of = _projection(points + centers, width, height)
+    cell_of = _projection(plotted + centers, width, height)
 
     # Groups overlap, so tally every mark landing in a cell and let the majority hold it.
-    marks = UNLABELED if len(clusters) == 1 else MARKS
+    marks = UNLABELED if len(groups) == 1 else MARKS
     tally: defaultdict[Cell, Counter[str]] = defaultdict(Counter)
-    for mark, (group, _) in zip(cycle(marks), clusters):
+    for mark, (group, _) in zip(cycle(marks), groups):
         for point in group:
             tally[cell_of(point)][mark] += 1
 
@@ -218,35 +254,28 @@ def show(
     print(f"└{rule}  " + "  ·  ".join(notes))
 
 
+def print_clusters(clusters: list[tuple[Centroid, list[Point]]]) -> None:
+    """One line per cluster: `centroid: points`.
+
+    Sorted so two runs are diffable — cluster order and point order are not part of the
+    contract, and sorting inside kmeans() would be a misread of it.
+    """
+    for centroid, pts in sorted(clusters):
+        coords = ",".join(f"({x:g},{y:g})" for x, y in sorted(pts))
+        cx, cy = centroid
+        print(f"({cx:.4g}, {cy:.4g}): {coords}")
+
+
 def _demo() -> None:
     """Self-test: the input shapes show() accepts. Entry point for `interview-k`."""
     quad: list[Point] = [(x, x * x // 8 - 40) for x in range(-20, 21)]
     left = [p for p in quad if p[0] < 0]
     right = [p for p in quad if p[0] >= 0]
 
-    show(quad, width=44, height=8, title="one group -> unlabeled")
-    show(
-        left,
-        right,
-        centroids=[(-10.0, -20.0), (10.0, -20.0)],
-        width=44,
-        height=8,
-        title="two groups + centroids",
-    )
-    show(
-        (p for p in left),
-        (p for p in right),
-        width=44,
-        height=8,
-        title="generators — safe, show() is single-pass",
-    )
-    show(
-        quad,
-        centroids=[(0.0, float("nan"))],
-        width=44,
-        height=8,
-        title="nan centroid does not crash",
-    )
+    show(points=quad, width=44, height=8, title="one group -> unlabeled")
+    show([left, right], [(-10.0, -20.0), (10.0, -20.0)], width=44, height=8, title="two groups + centroids")
+    show([(p for p in left), (p for p in right)], width=44, height=8, title="generators — safe, show() is single-pass")
+    show([quad], [(0.0, float("nan"))], width=44, height=8, title="nan centroid does not crash")
     show(width=44)
 
     try:
@@ -257,13 +286,8 @@ def _demo() -> None:
         rng = np.random.default_rng(1)
         arr = rng.normal(0, 20, (80, 2))
         pts: list[Point] = [(round(x), round(y)) for x, y in arr]  # ndarray rows -> Point
-        mid = [p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]
-        show(
-            *mid,
-            centroids=[(-20.0, 0.0), (20.0, 0.0)],
-            width=44,
-            title="from an ndarray",
-        )
+        mid = [[p for p in pts if p[0] < 0], [p for p in pts if p[0] >= 0]]
+        show(mid, [(-20.0, 0.0), (20.0, 0.0)], width=44, title="from an ndarray")
 
 
 if __name__ == "__main__":
@@ -281,13 +305,10 @@ if __name__ == "__main__":
 
 
 
-
-
-
 `uv run interview-k` prints the self-tests. If `●▲■◆★✚✦❖` render double-width in your
 terminal the grid skews — swap `MARKS` for the ASCII fallback on that line.
 
-Open with `show(TWENTY)` and "how many clusters do you see?" — their answer tells you whether
+Open with `show(points=TWENTY)` and "how many clusters do you see?" — their answer tells you whether
 they treat k as a parameter or a question.
 
 ### Datasets
@@ -334,140 +355,16 @@ failure-mode probes, so you can *show* a failure instead of describing it.
 | `unscaled` | y spans ~1000x x — Euclidean distance sees only y until you standardize |
 | `uniform` | 100 points, **no clusters at all** — k-means still returns k of them |
 
-Generator — `mise run datasets` writes `datasets.json`; everything else reads that:
+The points themselves are `datasets.json` at the repo root — generated once by
+`py/tools/datasets.py` (`mise run datasets`) and read by both languages, the tests, the
+answer key and both pads. Nothing regenerates them, so nothing can disagree about them:
 
 ```python
-"""Generate datasets.json for the k-means interview. Stdlib only, deterministic, integer coordinates.
+DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
+```
 
-TWENTY is a literal you can read at a glance and check by hand: 20 integer points in
-[0, 100], three obvious clusters of 7/6/7. The generated sets each break k-means a
-different way, so they double as the failure-mode probes — 1000 points each except
-uniform, which is 100:
-
-Run this (`mise run datasets`) to regenerate datasets.json, which is what everything else
-reads. Nothing imports this module; the JSON is the interface.
-
-    blobs       three well-separated clusters — the baseline that should just work
-    tight       same shape on a small integer range — int centroids truncate here
-    lopsided    cluster sizes 700/250/50 and unequal spread — k-means likes them even
-    elongated   anisotropic clusters — k-means carves spheres, so it splits them wrong
-    unscaled    y spans 1000x x — Euclidean distance sees only one feature
-    uniform     100 points, no clusters at all — k-means still returns k of them
-"""
-
-from __future__ import annotations
-
-import json
-import random
-from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from dataviz import Centroid, Point
-
-OUT = Path(__file__).parent.parent / "datasets.json"
-
-TWENTY: list[Point] = [
-    (10, 15),
-    (14, 20),
-    (9, 22),
-    (15, 14),
-    (11, 19),
-    (16, 21),
-    (8, 17),
-    (80, 28),
-    (85, 33),
-    (78, 31),
-    (84, 26),
-    (88, 30),
-    (81, 35),
-    (45, 75),
-    (50, 80),
-    (47, 82),
-    (52, 76),
-    (44, 79),
-    (51, 83),
-    (48, 77),
-]
-
-
-def _blob(rng: random.Random, center: Centroid, n: int, spread: tuple[float, float]) -> list[Point]:
-    cx, cy = center
-    sx, sy = spread
-    return [(round(cx + rng.gauss(0, sx)), round(cy + rng.gauss(0, sy))) for _ in range(n)]
-
-
-def blobs(seed: int = 1) -> list[Point]:
-    """Three well-separated round clusters. The baseline."""
-    r = random.Random(seed)
-    pts = _blob(r, (20, 20), 334, (4, 4)) + _blob(r, (80, 30), 333, (4, 4)) + _blob(r, (50, 80), 333, (4, 4))
-    r.shuffle(pts)
-    return pts
-
-
-def tight(seed: int = 2) -> list[Point]:
-    """Same shape, small integer range. Integer centroids quantize and it breaks."""
-    r = random.Random(seed)
-    pts = _blob(r, (0, 0), 334, (0.6, 0.6)) + _blob(r, (3, 3), 333, (0.6, 0.6)) + _blob(r, (0, 3), 333, (0.6, 0.6))
-    r.shuffle(pts)
-    return pts
-
-
-def lopsided(seed: int = 3) -> list[Point]:
-    """700/250/50 with unequal spread. k-means pulls boundaries toward the big one."""
-    r = random.Random(seed)
-    pts = _blob(r, (20, 20), 700, (6, 6)) + _blob(r, (60, 60), 250, (3, 3)) + _blob(r, (20, 70), 50, (1.5, 1.5))
-    r.shuffle(pts)
-    return pts
-
-
-def elongated(seed: int = 4) -> list[Point]:
-    """Anisotropic clusters. k-means fits spheres, so it cuts these the wrong way."""
-    r = random.Random(seed)
-    pts = _blob(r, (30, 20), 334, (25, 2)) + _blob(r, (30, 40), 333, (25, 2)) + _blob(r, (30, 60), 333, (25, 2))
-    r.shuffle(pts)
-    return pts
-
-
-def unscaled(seed: int = 5) -> list[Point]:
-    """y spans ~1000x x. Euclidean distance sees only y until you standardize."""
-    r = random.Random(seed)
-    pts = _blob(r, (2, 5000), 334, (0.5, 900)) + _blob(r, (5, 5000), 333, (0.5, 900)) + _blob(r, (8, 5000), 333, (0.5, 900))
-    r.shuffle(pts)
-    return pts
-
-
-def uniform(seed: int = 6) -> list[Point]:
-    """100 points spread evenly over [0, 100]^2. There is no cluster structure here.
-
-    k-means has no way to say so: it returns k clusters, every point assigned, inertia
-    dutifully minimized. Nothing in the output distinguishes this from real structure —
-    which is the whole argument for looking at the data before trusting the answer.
-    """
-    r = random.Random(seed)
-    return [(r.randint(0, 100), r.randint(0, 100)) for _ in range(100)]
-
-
-DATASETS: dict[str, list[Point]] = {
-    "TWENTY": TWENTY,
-    "BLOBS": blobs(),
-    "TIGHT": tight(),
-    "LOPSIDED": lopsided(),
-    "ELONGATED": elongated(),
-    "UNSCALED": unscaled(),
-    "UNIFORM": uniform(),
-}
-
-
-def main() -> None:
-    # one line per dataset: a 1000-point list is unreadable pretty-printed, and this still diffs per dataset
-    body = ",\n".join(f'  "{name}": {json.dumps([list(p) for p in points])}' for name, points in DATASETS.items())
-    OUT.write_text("{\n" + body + "\n}\n")
-    print(f"wrote {OUT} — " + ", ".join(f"{name} ({len(points)})" for name, points in DATASETS.items()))
-
-
-if __name__ == "__main__":
-    main()
+```ts
+const DATASETS = JSON.parse(readFileSync("datasets.json", "utf8")) as Record<string, [number, number][]>;
 ```
 
 
@@ -479,11 +376,9 @@ if __name__ == "__main__":
 
 
 
-
-
 ```python
-show(ELONGATED)  # look at one
-show(*clusters, centroids=C)  # after they cluster it
+show(points=ELONGATED)  # look at one
+show(clusters, C)  # after they cluster it
 ```
 
 `show()` stretches each axis to fill the box, so **`unscaled` plots fine while the algorithm
@@ -854,8 +749,8 @@ print(np.__version__)
 Drop this in the pad before they arrive:
 
 ```python
-# setup — paste dataviz.py above this line and load datasets.json, then:
-show(TWENTY)  # "how many clusters do you see?"
+# setup — paste dataviz.py above this line, and load datasets.json, then:
+show(points=TWENTY)  # "how many clusters do you see?"
 ```
 
 ### Authoring fields

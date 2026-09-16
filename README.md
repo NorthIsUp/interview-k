@@ -4,22 +4,35 @@ A live-coding interview problem: implement k-means from scratch.
 
 > [!WARNING]
 > This repo contains the **answer key** — `docs/packet.md` (rubric, hint ladder),
-> `main.py` (worked solution), `solutions.py` and `docs/answers.md` (expected
-> output). Don't send a candidate the repo link; paste them the library and the
-> problem statement.
+> `py/main.py` / `ts/main.ts` (worked solutions), `py/solutions.py` and `docs/answers.md`
+> (expected output). Don't send a candidate the repo link; paste them the library
+> and the problem statement.
+
+Python in `py/`, TypeScript in `ts/`, interview material in `docs/`. Each
+language documents its own half:
+
+- [`py/README.md`](py/README.md) — `show()`, the datasets, the Python harness
+- [`ts/README.md`](ts/README.md) — the same two modules, ported
 
 | path | what |
 |---|---|
-| `src/interview_k/dataviz.py` | `show()`, the ASCII scatter — the candidate-facing half |
-| `datasets.json` | the seven datasets, generated; everything reads this |
-| `tools/datasets.py` | regenerates `datasets.json` (`mise run datasets`) |
+| `INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
+| `coderpad.toml` | which question in the bank is ours; maintained by `coderpad:sync` |
+| `py/src/interview_k/` | `dataviz.py` — the candidate-facing half |
+| `datasets.json` | the seven datasets, generated; both languages read it |
+| `py/tools/datasets.py` | regenerates `datasets.json` (`mise run datasets`) |
+| `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
 | `docs/packet.md` | interviewer packet: problem, rubric, hints, timeline |
 | `docs/answers.md` | reference answers, generated |
-| `solutions.py` | expected centroids / sizes / inertia per dataset |
-| `main.py` | reference solution |
-| `tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
-| `tools/sync_packet.py` | re-embeds library source into the packet |
-| `tests/test_solutions.py` | grades `main.py` against all seven datasets |
+| `py/solutions.py` | expected centroids / sizes / inertia per dataset |
+| `py/main.py` | reference solution |
+| `ts/main.ts` | the same solution, ported — same seeds, same clusters |
+| `py/tools/answers.py` | regenerates `docs/answers.md` and `solutions.py` |
+| `py/tools/sync_packet.py` | re-embeds library source into the packet |
+| `py/tools/ts_fixture.py` | regenerates `ts/test/parity.json` (renders, answer key) |
+| `py/tools/coderpad.py` | builds both CoderPad projects; `--push` syncs them to the question bank |
+| `py/tests/test_solutions.py` | grades `main.py` against all seven datasets |
+| `ts/test/solutions.test.ts` | holds `main.ts` to the same answers |
 
 ## The problem
 
@@ -36,65 +49,20 @@ def kmeans(X, k):
 
 Plenty is left unspecified on purpose. Ask.
 
-## `show()` — ASCII scatter, stdlib only
-
-No numpy, no matplotlib, so it renders the same in CoderPad, Colab, a notebook,
-or a bare REPL.
-
-```python
-from interview_k import show
-
-show(points)  # one group -> every point is '·'
-show(*clusters)  # one mark per group, in argument order
-show(*clusters, centroids=C)  # centroids overlaid as their group's digit
-```
-
-A group is any iterable of any iterable pair — tuples, lists, ndarray rows,
-generators. Dimensions past the first two are ignored. `width`/`height` default
-to the terminal size, and the domain is stretched to fill it on each axis
-independently: a topology view, not a scale drawing.
-
-Non-finite coordinates are dropped and counted rather than raised on, so a
-half-finished solution still draws something:
-
-```text
-└────────────────────────────  1 point(s) unusable
-```
-
-Run the module to see every input shape it accepts:
-
-```sh
-uv run interview-k
-```
-
-If `●▲■◆★✚✦❖` render double-width in your terminal the grid will skew — swap
-`MARKS` for the ASCII fallback noted on that line.
-
-## The datasets
-
-`datasets.json` — seven named lists of `[x, y]` pairs: `TWENTY` (20 points, hand
-checkable) plus `BLOBS`, `TIGHT`, `LOPSIDED`, `ELONGATED`, `UNSCALED`, `UNIFORM`.
-No import, no package:
-
-```python
-DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
-```
-
-Regenerate with `mise run datasets` — `tools/datasets.py` holds the generators and
-the note on how each one breaks k-means.
+`INSTRUCTIONS.md` is the version a candidate sees — keep the two in step.
 
 ## Development
 
 ```sh
 mise install && mise run sync
-mise run test
+mise run test          # pytest + node --test
+mise run typecheck     # pyright + tsc
 mise run lint
-
-uv run pytest tests/test_solutions.py                 # grade main.py
-uv run python tools/answers.py > docs/answers.md      # regenerate answers
-uv run python tools/answers.py --write-solutions      # regenerate solutions.py
-uv run python tools/sync_packet.py                    # re-embed source in packet
-mise run datasets                                     # regenerate datasets.json
+mise run coderpad:sync --push   # sync "k-means [py]" and "k-means [ts]" to the question bank
+                                # each is a CoderPad project you copy per interview; add
+                                # --recreate to change its files, which changes the id
 ```
 
-To grade a candidate, drop their file in as `main.py` and run the harness.
+Per-language commands live in each half's README.
+
+To grade a candidate, drop their file in as `py/main.py` and run the harness.

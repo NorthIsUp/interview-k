@@ -7,9 +7,15 @@ local linters = new Mapping<String, Step> {
         glob  = "*.pkl"
         check = "pkl eval {{files}} >/dev/null"
     }
+    // Both typecheckers read config from their own directory, so they run whole-project
+    // rather than on {{files}} — the projects are small enough that it costs nothing.
     ["pyright"] {
-        glob  = "*.py"
-        check = "uv run pyright {{files}}"
+        glob  = "py/**/*.py"
+        check = "cd py && uv run pyright"
+    }
+    ["tsc"] {
+        glob  = "ts/**/*.ts"
+        check = "cd ts && npx tsc --noEmit"
     }
 }
 
@@ -23,7 +29,11 @@ hooks {
         steps {
             ...linters
             ["pytest"] {
-                check = "uv run pytest"
+                check = "cd py && uv run pytest"
+                exclusive = true
+            }
+            ["node-test"] {
+                check = "cd ts && node --test test/*.test.ts"
                 exclusive = true
             }
         }
