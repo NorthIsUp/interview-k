@@ -97,12 +97,18 @@ function terminalBox(width: number, height: number): [number, number] {
 
 /** Map data coordinates onto grid cells, stretching each axis to fill the box. */
 function projection(points: Centroid[], width: number, height: number): (point: Centroid) => Cell {
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const x0 = Math.min(...xs);
-  const x1 = Math.max(...xs);
-  const y0 = Math.min(...ys);
-  const y1 = Math.max(...ys);
+  // one pass rather than Math.min(...xs): spreading an array of arguments throws RangeError
+  // past ~65k of them, and Python's min() over a generator has no such ceiling to match.
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const [x, y] of points) {
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
+  }
   const spanX = x1 - x0 || 1;
   const spanY = y1 - y0 || 1;
 

@@ -21,7 +21,8 @@ def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence
 ### constraints
 
 - `stlib` always ok
-- if using python `numpy` okay; `sklearn.cluster` and `scipy.cluster` nokay.
+- if using python `numpy` okay; `sklearn.cluster` and `scipy.cluster` nokay
+- if using typescript `lodash` is provided
 - It should run and output results
 - It should use `show` from `dataviz` to pretty print the results
 - A stub function has been given to you, but you don't _have_ to use it but your solution must support the same arguments and return type somewhere.
