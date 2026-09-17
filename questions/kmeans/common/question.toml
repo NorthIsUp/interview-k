@@ -1,4 +1,4 @@
 # What the CoderPad bank calls this question. coderpad.toml keys its ids by title and there is
 # no server-side lookup by title, so renaming here orphans the existing question ids.
 title       = "k-means"
-description = "Implement clustering from scratch. Rubric, hint ladder and expected output: questions/kmeans/_packet.md in the interview-k repo."
+description = "Implement clustering from scratch. Scored against RUBRIC.md in the interview-k repo."

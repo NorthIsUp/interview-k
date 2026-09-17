@@ -5,11 +5,12 @@ plus `show()`, a dependency-free ASCII scatter that renders anywhere a candidate
 might be typing.
 
 > [!WARNING]
-> `_packet.md` is the interviewer's scoring rubric. Don't send a candidate the repo link.
+> `RUBRIC.md` is the interviewer's scoring rubric. Don't send a candidate the repo link.
 
 | path | what |
 |---|---|
 | `questions/<name>/` | one question: the brief, the data, and a directory per language |
+| `RUBRIC.md` | how a candidate is scored — shared by every question |
 | `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
 | `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
 
@@ -24,7 +25,6 @@ has a `common/question.toml`.
 | `common/question.toml` | the title the CoderPad bank knows it by, and the pad description |
 | `common/data.py` | prints the dataset to stdout; `mise run sync` redirects it into `data.json` |
 | `common/data.json` | generated but committed — every language reads it |
-| `_packet.md` | interviewer scoring rubric and scorecard |
 | `py/` `ts/` | one directory per language |
 
 A language directory is exactly what the candidate opens, hand-made for that
