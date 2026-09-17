@@ -252,8 +252,8 @@ class Question:
         return BUILD / self.title.replace(" ", "_")
 
     def instructions(self) -> str:
-        """common/README.md, plus a line saying where the project's files are."""
-        brief = (self.root / "common" / "README.md").read_text().rstrip()
+        """common/INSTRUCTIONS.md, plus a line saying where the project's files are."""
+        brief = (self.root / "common" / "INSTRUCTIONS.md").read_text().rstrip()
         return f"{brief}\n\n{PAD_NOTE}"
 
     def write(self) -> Path:

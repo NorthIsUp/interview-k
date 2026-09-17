@@ -21,7 +21,7 @@ has a `common/question.toml`.
 
 | path | what |
 |---|---|
-| `common/README.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
+| `common/INSTRUCTIONS.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
 | `common/question.toml` | the title the CoderPad bank knows it by, and the pad description |
 | `common/data.py` | prints the dataset to stdout; `mise run sync` redirects it into `data.json` |
 | `common/data.json` | generated but committed — every language reads it |
@@ -52,7 +52,7 @@ def cluster(points: Iterable[Point], k: int, max_iter: int = 100) -> Iterable[tu
 
 Plenty is left unspecified on purpose. Ask.
 
-`questions/kmeans/common/README.md` is the version a candidate sees.
+`questions/kmeans/common/INSTRUCTIONS.md` is the version a candidate sees.
 
 ## Development
 
