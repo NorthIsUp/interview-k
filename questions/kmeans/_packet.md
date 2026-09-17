@@ -101,7 +101,7 @@ data, 100 seeds per cell:
 Survives testing, breaks in production. Hand them `TIGHT` once their solution works. Naming
 _where_ it breaks is a 4; naming that it depends on scale is a 4 you should hire.
 
-**Plotting helper** (source at `src/interview_k/dataviz.py`). Stdlib only, takes `Iterable[Point]`,
+**Plotting helper** (source at `py/dataviz.py`). Stdlib only, takes `Iterable[Point]`,
 and drops non-finite coordinates with a count instead of raising — so a `nan` centroid still
 plots and reports `1 point(s) unusable`.
 
@@ -359,11 +359,11 @@ The points themselves are this question's `common/data.json` — generated once 
 answer key and both pads. Nothing regenerates them, so nothing can disagree about them:
 
 ```python
-DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
+DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("data.json").read_text()).items()}
 ```
 
 ```ts
-const DATASETS = JSON.parse(readFileSync("datasets.json", "utf8")) as Record<string, [number, number][]>;
+const DATASETS = JSON.parse(readFileSync("src/data.json", "utf8")) as Record<string, [number, number][]>;
 ```
 
 
@@ -383,16 +383,11 @@ show(clusters, C)  # after they cluster it
 `show()` stretches each axis to fill the box, so **`unscaled` plots fine while the algorithm
 fails on it** — a plot normalizing away the exact problem the metric has. Worth saying aloud.
 
-#### Grading harness
+#### Grading
 
-`py/test_solutions.py` grades a solution against all seven datasets:
-
-```sh
-uv run pytest questions/kmeans/py/test_solutions.py                    # grades reference/main.py
-KMEANS_SOLUTION=~/their/main.py uv run pytest questions/kmeans/py/test_solutions.py
-```
-
-It asserts the k-means **fixed-point conditions** rather than an expected answer, because
+There is no harness. The repo ships what the candidate gets — a stub and `show()` — and
+nothing else, so grading is reading their code and running it in the pad beside them. Judge
+the k-means **fixed-point conditions** rather than an expected answer, because
 there is no single right answer — different initialisations reach different local minima and
 all are legitimate:
 
@@ -748,7 +743,7 @@ print(np.__version__)
 Drop this in the pad before they arrive:
 
 ```python
-# setup — paste dataviz.py above this line, and load datasets.json, then:
+# setup — paste dataviz.py above this line, and load data.json, then:
 show(points=TWENTY)  # "how many clusters do you see?"
 ```
 

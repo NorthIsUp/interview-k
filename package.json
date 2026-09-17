@@ -8,12 +8,12 @@
     "node": ">=22.18"
   },
   "exports": {
-    ".": "./ts/src/index.ts"
+    ".": "./questions/kmeans/ts/dataviz.ts"
   },
   "scripts": {
     "test": "node --test ts/test/*.test.ts questions/*/ts/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "demo": "node ts/src/dataviz.ts"
+    "demo": "node questions/kmeans/ts/dataviz.ts"
   },
   "devDependencies": {
     "@types/node": "^24",

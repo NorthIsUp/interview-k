@@ -30,8 +30,7 @@ jobs:
       - run: npm test
 
       # data.json and _packet.md are generated but committed, so regenerating them must be a
-      # no-op. A diff means someone hand-edited one, or a generator drifted. Everything else
-      # generated lands in build/, which is gitignored and so has nothing to compare against.
+      # no-op. A diff means someone hand-edited one, or a generator drifted.
       - run: git diff --exit-code
 
       # A pad compiles TypeScript as CommonJS under ts-node, which the checks above never

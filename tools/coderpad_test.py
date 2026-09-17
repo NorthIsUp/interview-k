@@ -52,31 +52,35 @@ PYTHON, TYPESCRIPT = discover()
 def test_python_project_has_what_the_template_boots() -> None:
     project = python_project(PYTHON)
     # requirements.txt is not decoration: the template's initCommand pip-installs from it.
-    assert {".cpad", "requirements.txt", "src/main.py", "src/datasets.json", "src/dataviz.py"} == set(project)
+    assert {".cpad", "requirements.txt", "src/main.py", "src/data.json", "src/dataviz.py"} == set(project)
     assert _run_command(project) == ["python", "src/main.py"]
     # The points are data, and main.py reads them from the file sitting beside it.
-    assert "datasets.json" in project["src/main.py"]
-    assert set(json.loads(project["src/datasets.json"])) == {"TWENTY", "BLOBS", "TIGHT", "LOPSIDED", "ELONGATED", "UNSCALED", "UNIFORM"}
+    assert "data.json" in project["src/main.py"]
+    assert set(json.loads(project["src/data.json"])) == {"TWENTY", "BLOBS", "TIGHT", "LOPSIDED", "ELONGATED", "UNSCALED", "UNIFORM"}
 
 
 def test_typescript_project_has_what_the_template_boots() -> None:
     project = typescript_project(TYPESCRIPT)
-    assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/index.ts", "src/datasets.json"} <= set(project)
+    assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/data.json"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
 
 
 def test_the_printer_is_library_code_not_the_candidate_s() -> None:
-    """`print_clusters` is given to them, so it ships in dataviz — not pasted into their file."""
+    """`print_clusters` is given to them, so it ships in dataviz — not pasted into their file.
+
+    The stub imports `show` and nothing else: the printer is there to be found, not pressed on
+    them before they have clusters to print.
+    """
     python, typescript = python_project(PYTHON), typescript_project(TYPESCRIPT)
 
     assert "def print_clusters" in python["src/dataviz.py"]
     assert "def print_clusters" not in python["src/main.py"]
-    assert "from dataviz import print_clusters" in python["src/main.py"]
+    assert "from dataviz import show" in python["src/main.py"]
 
     assert "function printClusters" in typescript["src/dataviz.ts"]
     assert "function printClusters" not in typescript["src/main.ts"]
-    assert "printClusters" in typescript["src/main.ts"], "still imported, just not defined there"
+    assert 'import { show } from "./dataviz"' in typescript["src/main.ts"]
 
 
 def test_underscore_prefixed_files_never_ship() -> None:
@@ -91,10 +95,11 @@ def test_underscore_prefixed_files_never_ship() -> None:
         assert not [name for name in project if any(part.startswith("_") for part in name.split("/"))]
 
 
-def test_the_python_project_has_no_package_imports_left() -> None:
+def test_the_python_project_reaches_no_further_than_src() -> None:
     """Nothing is a package in the pad — the modules sit next to each other under src/."""
     for name, text in python_project(PYTHON).items():
-        assert "interview_k" not in text, f"{name} still reaches for the package"
+        assert "from questions" not in text, f"{name} still imports from the repo tree"
+        assert "from .." not in text, f"{name} still reaches above src/"
 
 
 def test_no_import_meta_reaches_the_pad() -> None:
@@ -109,7 +114,7 @@ def test_no_import_meta_reaches_the_pad() -> None:
 def test_ts_specifiers_lose_their_extension() -> None:
     """ts-node rejects a `.ts` specifier (TS5097); node's type stripping requires one."""
     assert strip_ts_extension('from "./dataviz.ts";') == 'from "./dataviz";'
-    assert 'from "./dataviz"' in typescript_project(TYPESCRIPT)["src/index.ts"]
+    assert 'from "./dataviz"' in typescript_project(TYPESCRIPT)["src/main.ts"]
 
 
 def test_python_project_runs_its_run_target(tmp_path: Path) -> None:
@@ -138,9 +143,9 @@ def test_instructions_are_the_brief_plus_the_language_readme() -> None:
 
     for text in (python, typescript):
         assert brief in text, "the candidate brief goes in whole"
-    assert "from interview_k import show" in python
-    assert './src/index.ts"' in typescript
-    assert "from interview_k import show" not in typescript
+    assert "from dataviz import show" in python
+    assert './dataviz.ts"' in typescript
+    assert "from dataviz import show" not in typescript
 
 
 def test_instructions_leave_the_interviewer_half_behind() -> None:
@@ -179,7 +184,7 @@ def test_questions_are_the_two_the_interview_ships() -> None:
     # Project templates, not languages: `multifile_python` is rejected as a language.
     assert [q.language.project_template for q in discover()] == [79, 93]
     for question in discover():
-        assert question.solution.exists(), f"{question.title} has no reference solution at {question.solution}"
+        assert question.stub.exists(), f"{question.title} has no stub at {question.stub}"
 
 
 def test_cookie_header_from_devtools_table() -> None:

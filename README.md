@@ -5,71 +5,62 @@ plus `show()`, a dependency-free ASCII scatter that renders anywhere a candidate
 might be typing.
 
 > [!WARNING]
-> This repo contains the **answer keys** — packets, worked solutions and expected
-> output. Don't send a candidate the repo link; paste them the library and the
-> problem statement.
+> This repo contains the **answer key** — `_packet.md` holds the rubric, the hint
+> ladder and the expected failure modes. Don't send a candidate the repo link.
 
 | path | what |
 |---|---|
-| `questions/<name>/` | one question: brief, packet, data, and a directory per language |
-| `src/interview_k/` | `dataviz.py` — `show()`, shared by every question |
-| `ts/src/` | `dataviz.ts`, `index.ts` — the same helper, ported |
+| `questions/<name>/` | one question: the brief, the data, and a directory per language |
 | `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
+| `tools/packet.py` | re-embeds each question's library into its `_packet.md` |
 | `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
-| `*_test.py` | each suite sits beside what it tests; questions grade themselves in their own directories |
 
 ## A question directory
 
-`questions/kmeans/` is the pattern. The only required file is `sync.py` —
-`mise run sync <name>` runs it, `mise run sync` runs every one, and a directory
-becomes a question the moment it has one.
+`questions/kmeans/` is the pattern. A directory becomes a question the moment it
+has a `common/question.toml`.
 
 | path | what |
 |---|---|
 | `common/README.md` | the candidate-facing brief; what `coderpad:sync` puts in the pad |
-| `common/data.py` | generates `common/data.json`; `mise run sync` runs it if it exists |
-| `_packet.md` | interviewer packet: problem, rubric, hint ladder, timeline. `_` means it never ships to a pad |
-| `pad.py` | this question's pad title, description and `main` templates |
-| `sync.py` | regenerates everything generated here; the whole contract |
-| `py/` `ts/` | one directory per language — reference solution, generators, tests |
-| `common/data.json` | generated but committed; both languages read it |
+| `common/question.toml` | the title the CoderPad bank knows it by, and the pad description |
+| `common/data.py` | prints the dataset to stdout; `mise run sync` redirects it into `data.json` |
+| `common/data.json` | generated but committed — every language reads it |
+| `_packet.md` | interviewer packet: problem, rubric, hint ladder, timeline |
+| `py/` `ts/` | one directory per language |
 
-A language directory holds that language's `main` (the reference solution — swap
-in a candidate's to grade theirs) and its tests. Python adds the generators
-(`answers.py`, `ts_fixture.py`); TypeScript adds `datasets.ts`.
-
-Everything derived lands in `build/<name>/`, which is gitignored — `solutions.json`
-(the expected output per dataset), `answers.md` (the key as markdown) and
-`parity.json` (the fixture holding the TS port to Python's output). `mise run test`
-depends on `sync`, so they are there before anything reads them.
+A language directory is exactly what the candidate opens, hand-made for that
+language: `main` (the stub they type into) and `dataviz` (the `show()` helper
+they're given). Nothing else ships — no reference solution, no grading suite.
+Files prefixed `_` are the interviewer's and never reach a pad, which is where
+each language's `_README.md` and its `show()` tests live.
 
 Adding a language to a question is adding a directory named for it. Adding a
-question is adding a directory with a `sync.py`. Neither edits a registry —
-`tools/coderpad.py` discovers both.
+question is adding a directory with a `common/question.toml`. Neither edits a
+registry — `tools/coderpad.py` discovers both.
+
+Everything derived lands in `build/`, which is gitignored: one assembled pad
+project per question per language.
 
 ## The kmeans problem
 
-Implement k-means clustering from scratch. You're given `X`, an array of shape
-`(n, d)` — n points in d dimensions — and an integer `k`. Return the cluster
-label for each point and the final centroids. numpy is fine; scikit-learn and
-scipy's clustering modules are not.
+Implement clustering from scratch. You're given a list of _x y_ points and an
+integer _k_; return each centroid and the points assigned to it. numpy is fine;
+`sklearn.cluster` and `scipy.cluster` are not.
 
 ```python
-def kmeans(X, k):
-    """Returns (labels, centroids) — labels (n,), centroids (k, d)."""
-    ...
+def cluster(points: Iterable[Point], k: int, max_iter: int = 100) -> Iterable[tuple[Centroid, list[Point]]]: ...
 ```
 
 Plenty is left unspecified on purpose. Ask.
 
-`questions/kmeans/common/README.md` is the version a candidate sees — keep the two
-in step.
+`questions/kmeans/common/README.md` is the version a candidate sees.
 
 ## Development
 
 ```sh
 mise run install       # uv sync + npm ci
-mise run sync          # regenerate every question
+mise run sync          # regenerate every question's data and packet
 mise run sync kmeans   # just one
 mise run test          # pytest + node --test, both languages
 mise run typecheck     # pyright + tsc
@@ -78,11 +69,9 @@ mise run lint
 mise run coderpad:sync --push   # sync every question to the CoderPad question bank
                                 # each is a project you copy per interview; add
                                 # --recreate to change its files, which changes the id
+mise run coderpad:test          # compile and run each pad the way its own pad does
 ```
 
-The library halves document themselves:
-[`src/interview_k/README.md`](src/interview_k/README.md) and
-[`ts/README.md`](ts/README.md).
-
-To grade a candidate, drop their file in as `questions/<name>/<lang>/main.*` and
-run `mise run test`.
+The stubs are excluded from `lint` and `typecheck` — unfinished is the point, and
+`coderpad:test` compiles them in the pad's own toolchain, which is the check that
+has actually caught bugs.

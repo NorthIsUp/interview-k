@@ -1,6 +1,6 @@
 # interview-k — Python
 
-The candidate-facing half is `src/interview_k/dataviz.py` plus the question's `common/data.json`, stdlib only.
+The candidate-facing half is this question's `py/dataviz.py` plus its `common/data.json`, stdlib only.
 
 ## `show()` — ASCII scatter, stdlib only
 
@@ -8,7 +8,7 @@ No numpy, no matplotlib, so it renders the same in CoderPad, Colab, a notebook,
 or a bare REPL.
 
 ```python
-from interview_k import show
+from dataviz import show
 
 show(points=pts)  # one group -> every point is '·'
 show(clusters)  # one mark per group, in list order
@@ -51,7 +51,7 @@ Seven of them, in `questions/kmeans/common/data.json`: `TWENTY`, `BLOBS`, `TIGHT
 No import and no package — the TypeScript side reads the same file:
 
 ```python
-DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("datasets.json").read_text()).items()}
+DATASETS = {name: [(x, y) for x, y in pts] for name, pts in json.loads(Path("data.json").read_text()).items()}
 ```
 
 `questions/kmeans/common/data.py` holds the generators and the note on how each

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from interview_k import Centroid, Point, show
+from questions.kmeans.py.dataviz import Centroid, Point, show
 
 # show() is question-agnostic, so these exercise it on shapes of their own — no question data
 SQUARE: list[Point] = [(0, 0), (0, 1), (1, 0), (1, 1)]

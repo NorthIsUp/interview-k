@@ -19,8 +19,9 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
+  "exclude": ["questions/*/ts/main.ts"],
   "include": [
-    "ts/**/*.ts",
+    "questions/*/ts/**/*.ts",
     "questions/*/ts/**/*.ts"
   ]
 }

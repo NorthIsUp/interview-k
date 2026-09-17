@@ -35,13 +35,11 @@ import tomllib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from types import ModuleType
 
 ROOT = Path(__file__).parent.parent
 QUESTION_ROOT = ROOT / "questions"
@@ -75,14 +73,6 @@ def _cpad(command: str) -> str:
     return json.dumps({"targets": {"run": {"label": "Main", "command": command}}}, indent=2) + "\n"
 
 
-def _stub(packet: Path, fence: str, opener: str) -> str:
-    """The candidate's stub, read out of the packet so there is one copy of it per language."""
-    match = re.search(rf"```{fence}\n({re.escape(opener)}\n.*?)```", packet.read_text(), re.DOTALL)
-    if match is None:
-        raise SystemExit(f"{packet} no longer has a ```{fence} block starting {opener!r} — fix the opener in its pad.py")
-    return match.group(1).rstrip()
-
-
 # A leading underscore means the file is ours. A pad project is handed to the candidate whole,
 # so anything the interviewer keeps beside it — `_tests/`, scratch, the marking scheme — is
 # named that way and never ships. It also covers `__init__.py`, which a flat pad has no use for.
@@ -95,22 +85,15 @@ def shipped(project: dict[str, str]) -> dict[str, str]:
 
 def python_project(question: Question) -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
-    # the suite sits beside the library it tests; a pad is not where it belongs
-    files = {f"src/{path.name}": path.read_text() for path in (ROOT / "src/interview_k").glob("*.py") if not path.stem.endswith("_test")}
-
-    stub = _stub(question.packet, "python", question.pad.PY_OPENER)
-    # The packet's stub carries its own Sequence import; main.py already has one.
-    stub = stub.replace("from collections.abc import Sequence\n", "", 1).lstrip()
-    main = question.pad.PY_MAIN.format(stub=stub)
-    compile(main, "main.py", "exec")  # a stub that does not parse is worse than none
+    files = {f"src/{path.name}": path.read_text() for path in question.dir.glob("*.py")}
+    compile(files["src/main.py"], "main.py", "exec")  # a stub that does not parse is worse than none
 
     return shipped({
         ".cpad": _cpad("python src/main.py"),
         # The template boots with `pip3 install -r requirements.txt`; without it that fails.
         "requirements.txt": "# The interview is stdlib only.\n",
         **files,
-        "src/datasets.json": question.datasets.read_text(),
-        "src/main.py": main,
+        "src/data.json": question.datasets.read_text(),
     })
 
 
@@ -137,39 +120,19 @@ def strip_entry_guard(source: str) -> str:
     return "\n".join(line for line in source.splitlines() if not line.startswith(TS_ENTRY_GUARD)).rstrip() + "\n"
 
 
-def flatten_json_import(source: str) -> str:
-    """In the pad there is no questions/<name>/common to reach into: the data is beside datasets.ts.
-
-    `import.meta` goes with it — a pad compiles CommonJS, where it does not exist — so the
-    path becomes the plain string the Run button's working directory resolves.
-    """
-    return re.sub(r'new URL\("(?:\.\./)+common/data\.json", import\.meta\.url\)', '"src/datasets.json"', source)
-
-
-# A question's TS reaches the shared library by relative path; a pad has every file in one
-# flat src/, so the walk up to ts/src/ collapses to a sibling.
-LIB_IMPORT = re.compile(r'(from\s+")(?:\.\./)+ts/src/([^"]+)(")')
-
-
-def flatten_lib_import(source: str) -> str:
-    return LIB_IMPORT.sub(r"\1./\2\3", source)
-
-
 def _for_the_pad(source: str) -> str:
     """Every rewrite a repo .ts needs before a pad will compile it, in one place."""
-    return flatten_json_import(flatten_lib_import(strip_entry_guard(strip_ts_extension(source))))
+    return strip_entry_guard(strip_ts_extension(source))
 
 
 def typescript_project(question: Question) -> dict[str, str]:
-    sources = [*(ROOT / "ts/src").glob("*.ts"), question.dir / "datasets.ts"]
-    files = {f"src/{path.name}": _for_the_pad(path.read_text()) for path in sources}
+    files = {f"src/{path.name}": _for_the_pad(path.read_text()) for path in question.dir.glob("*.ts")}
     manifest = {"name": question.name, "private": True, "scripts": {"main": "ts-node src/main.ts"}}
     return shipped({
         ".cpad": _cpad("npm run main"),
         "package.json": json.dumps(manifest, indent=2) + "\n",
         **files,
-        "src/datasets.json": question.datasets.read_text(),
-        "src/main.ts": question.pad.TS_MAIN.format(stub=_stub(question.packet, "typescript", question.pad.TS_OPENER)),
+        "src/data.json": question.datasets.read_text(),
     })
 
 
@@ -242,14 +205,14 @@ class Language:
 
     tag: str
     project_template: int
-    solution: str
-    readme: Path
+    stub: str
+    readme: str
     build: Callable[[Question], dict[str, str]]
 
 
 LANGUAGES: dict[str, Language] = {
-    "py": Language("py", PYTHON_PROJECT, "main.py", ROOT / "src/interview_k/README.md", python_project),
-    "ts": Language("ts", TYPESCRIPT_PROJECT, "main.ts", ROOT / "ts/README.md", typescript_project),
+    "py": Language("py", PYTHON_PROJECT, "main.py", "_README.md", python_project),
+    "ts": Language("ts", TYPESCRIPT_PROJECT, "main.ts", "_README.md", typescript_project),
 }
 
 
@@ -267,7 +230,7 @@ class Question:
         The question names its own title because a directory has to be a python package —
         `k-means` is not — and coderpad.toml keys its ids by title.
         """
-        return f"{getattr(self.pad, 'TITLE', self.name)} [{self.language.tag}]"
+        return f"{self.meta.get('title', self.name)} [{self.language.tag}]"
 
     @property
     def root(self) -> Path:
@@ -286,13 +249,13 @@ class Question:
         return self.root / "common" / "data.json"
 
     @property
-    def solution(self) -> Path:
-        return self.dir / self.language.solution
+    def stub(self) -> Path:
+        return self.dir / self.language.stub
 
     @property
-    def pad(self) -> ModuleType:
-        """The question's pad.py — its description, stub openers and `main` templates."""
-        return import_module(f"questions.{self.name}.pad")
+    def meta(self) -> dict[str, str]:
+        """common/question.toml — the title the bank knows it by, and the pad description."""
+        return tomllib.loads((self.root / "common" / "question.toml").read_text())
 
     def project(self) -> dict[str, str]:
         return self.language.build(self)
@@ -311,7 +274,7 @@ class Question:
         README is the reference for the code sitting in the project.
         """
         brief = (self.root / "common" / "README.md").read_text().rstrip()
-        return f"{brief}\n\n{PAD_NOTE}\n{_for_the_candidate(self.language.readme)}\n"
+        return f"{brief}\n\n{PAD_NOTE}\n{_for_the_candidate(self.dir / self.language.readme)}\n"
 
     def write(self) -> Path:
         """Lay the project out on disk, from scratch.
@@ -330,13 +293,14 @@ class Question:
 def discover() -> tuple[Question, ...]:
     """Every question directory, times every language directory inside it.
 
-    A directory is a question once it has a sync.py, and carries a language once it has a
-    subdirectory named for one — so adding either is adding a directory, never editing this.
+    A directory is a question once it has a common/question.toml, and carries a language once
+    it has a subdirectory named for one — so adding either is adding a directory, never
+    editing this.
     """
     return tuple(
         Question(name=question.name, language=LANGUAGES[lang.name])
         for question in sorted(QUESTION_ROOT.iterdir())
-        if (question / "sync.py").is_file()
+        if (question / "common" / "question.toml").is_file()
         for lang in sorted(question.iterdir())
         if lang.is_dir() and lang.name in LANGUAGES
     )
@@ -457,8 +421,8 @@ def push(question: Question, cookies: str, csrf: str, *, recreate: bool) -> None
     project = question.project()
     fields: dict[str, Any] = {
         "title": question.title,
-        "description": question.pad.DESCRIPTION,
-        "solution": question.solution.read_text(),
+        "description": question.meta["description"],
+        "solution": question.stub.read_text(),
         "candidateInstructions": [{"instructions": question.instructions(), "defaultVisible": True}],
     }
 

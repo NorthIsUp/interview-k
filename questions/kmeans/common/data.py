@@ -5,8 +5,8 @@ TWENTY is a literal you can read at a glance and check by hand: 20 integer point
 different way, so they double as the failure-mode probes — 1000 points each except
 uniform, which is 100:
 
-`mise run sync kmeans` runs this, because it is a question's `common/data.py`. Nothing
-imports the module; the JSON beside it is the interface, and both languages read it.
+Run this (`mise run sync kmeans`) to regenerate common/data.json, which is what everything else
+reads. Nothing imports this module; the JSON is the interface.
 
     blobs       three well-separated clusters — the baseline that should just work
     tight       same shape on a small integer range — int centroids truncate here
@@ -20,13 +20,11 @@ from __future__ import annotations
 
 import json
 import random
-from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from interview_k.dataviz import Centroid, Point
+# spelled out rather than imported: common/ is language-neutral, so it does not reach into py/
+Point = tuple[int, int]
+Centroid = tuple[float, float]
 
-OUT = Path(__file__).with_name("data.json")
 
 TWENTY: list[Point] = [
     (10, 15),
@@ -121,10 +119,10 @@ DATASETS: dict[str, list[Point]] = {
 
 
 def main() -> None:
-    # one line per dataset: a 1000-point list is unreadable pretty-printed, and this still diffs per dataset
+    # one line per dataset: a 1000-point list pretty-printed is 4000 unreadable lines, and
+    # this still diffs per dataset when one of them changes
     body = ",\n".join(f'  "{name}": {json.dumps([list(p) for p in points])}' for name, points in DATASETS.items())
-    OUT.write_text("{\n" + body + "\n}\n")
-    print(f"wrote {OUT} — " + ", ".join(f"{name} ({len(points)})" for name, points in DATASETS.items()))
+    print("{\n" + body + "\n}")
 
 
 if __name__ == "__main__":

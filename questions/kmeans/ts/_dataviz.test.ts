@@ -1,10 +1,10 @@
-/** The TS twin of `src/interview_k/dataviz_test.py`, test for test. */
+/** The TS twin of `_dataviz_test.py`, test for test. */
 
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { show, type Centroid, type Point } from "../src/dataviz.ts";
-import { capture } from "./capture.ts";
+import { show, type Centroid, type Point } from "./dataviz.ts";
+import { capture } from "./_capture.ts";
 
 const SQUARE: Point[] = [
   [0, 0],

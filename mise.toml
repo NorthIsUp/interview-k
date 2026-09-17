@@ -24,7 +24,6 @@ run         = "uv sync"
 
 [tasks."ts:install"]
 description = "Install node dependencies"
-dir         = "ts"
 run         = "npm ci"
 
 # ── questions ───────────────────────────────────────────────────────────────
@@ -43,15 +42,12 @@ else
   [ -d "$1" ] || { echo "no such question: $usage_name (have: $(ls questions | tr '\\n' ' '))" >&2; exit 1; }
 fi
 for q; do
-  name=$(basename "$q")
-  echo "── $name"
-  # a question's data is whatever its common/data.py prints to common/data.json; everything
-  # else it generates is sync.py's business, and both are optional
-  [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py"
-  # as a module, not a path, so the repo root stays importable (`questions.<name>`)
-  [ -f "$q/sync.py" ] && uv run python -m "questions.$name.sync"
+  echo "── $(basename "$q")"
+  # common/data.py prints the dataset to stdout; the JSON beside it is what both languages read
+  [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py" > "$q/common/data.json"
   true
 done
+uv run python -m tools.packet
 """
 
 # ── checks ──────────────────────────────────────────────────────────────────
@@ -68,8 +64,7 @@ run         = "uv run pytest"
 [tasks."ts:test"]
 description = "Run typescript tests — the library and every question's port"
 depends     = ["sync"]
-dir         = "ts"
-run         = "node --test test/*.test.ts ../questions/*/ts/*.test.ts"
+run         = "node --test questions/*/ts/*.test.ts"
 
 [tasks.typecheck]
 description = "Typecheck both languages"
@@ -81,7 +76,6 @@ run         = "uv run pyright"
 
 [tasks."ts:typecheck"]
 description = "Run tsc"
-dir         = "ts"
 run         = "npx tsc --noEmit"
 
 [tasks.lint]

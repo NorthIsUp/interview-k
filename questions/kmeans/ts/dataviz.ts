@@ -25,7 +25,7 @@
  * so the result is a topology view rather than a scale drawing. Pass them explicitly for
  * a fixed size.
  *
- * Ported from `py/src/interview_k/dataviz.py`. The one thing the port cannot carry over is
+ * Ported from `py/dataviz.py`. The one thing the port cannot carry over is
  * the Point/Centroid int/float split: it is documentation only, TypeScript has one number
  * type.
  */
