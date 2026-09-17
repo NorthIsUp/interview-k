@@ -136,20 +136,19 @@ def test_typescript_project_runs_its_entry(tmp_path: Path) -> None:
     assert "│" in done.stdout, "the first Run should plot the data"
 
 
-def test_instructions_are_the_brief_plus_the_language_readme() -> None:
-    """common/README.md is the problem; each language README documents the code in the project."""
+def test_instructions_are_the_brief_itself() -> None:
+    """common/README.md is the whole brief — the same one whatever language the pad is."""
     brief = (Path(__file__).parent.parent / "questions/kmeans/common/README.md").read_text().rstrip()
     python, typescript = (question.instructions() for question in discover())
 
     for text in (python, typescript):
         assert brief in text, "the candidate brief goes in whole"
-    assert "from dataviz import show" in python
-    assert './dataviz.ts"' in typescript
-    assert "from dataviz import show" not in typescript
+        assert text.endswith(coderpad.PAD_NOTE), "and it says where the project's files are"
+    assert python == typescript
 
 
 def test_instructions_leave_the_interviewer_half_behind() -> None:
-    """A README's Development section is repo commands — including how the candidate is graded."""
+    """Nothing interviewer-facing may drift into the brief, which ships to the candidate whole."""
     for question in discover():
         text = question.instructions()
         assert "## Development" not in text

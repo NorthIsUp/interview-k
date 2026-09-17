@@ -148,25 +148,6 @@ PAD_NOTE = (
     "`show()` and the datasets are in this project already — open the files on the left. Write your solution in `main` and press Run.\n"
 )
 
-# Repo commands: regenerating the answer key, running the harness, grading a candidate's
-# file. None of it means anything inside a pad, and the last of it is nobody's business.
-INTERVIEWER_SECTIONS = frozenset({"Development"})
-
-
-def _for_the_candidate(readme: Path) -> str:
-    """A language README's sections, minus the ones written for whoever is running the interview.
-
-    Excluding by name rather than picking by name so that a section added to a README turns up
-    in the pad by default — the READMEs are the library's documentation, and that is the half
-    the candidate is owed.
-    """
-    sections = re.split(r"^## ", readme.read_text(), flags=re.MULTILINE)[1:]
-    kept = [section for section in sections if section.split("\n", 1)[0].strip() not in INTERVIEWER_SECTIONS]
-    if not kept:
-        raise SystemExit(f"{readme} has no candidate-facing sections left — did its headings change?")
-    return "\n\n".join(f"## {section.rstrip()}" for section in kept)
-
-
 # ── the questions ────────────────────────────────────────────────────────────
 
 
@@ -212,13 +193,12 @@ class Language:
     tag: str
     project_template: int
     stub: str
-    readme: str
     build: Callable[[Question], dict[str, str]]
 
 
 LANGUAGES: dict[str, Language] = {
-    "py": Language("py", PYTHON_PROJECT, "main.py", "_README.md", python_project),
-    "ts": Language("ts", TYPESCRIPT_PROJECT, "main.ts", "_README.md", typescript_project),
+    "py": Language("py", PYTHON_PROJECT, "main.py", python_project),
+    "ts": Language("ts", TYPESCRIPT_PROJECT, "main.ts", typescript_project),
 }
 
 
@@ -272,11 +252,9 @@ class Question:
         return BUILD / self.title.replace(" ", "_")
 
     def instructions(self) -> str:
-        """The brief, then this language's library docs. common/README.md is the problem; the
-        README is the reference for the code sitting in the project.
-        """
+        """common/README.md, plus a line saying where the project's files are."""
         brief = (self.root / "common" / "README.md").read_text().rstrip()
-        return f"{brief}\n\n{PAD_NOTE}\n{_for_the_candidate(self.dir / self.language.readme)}\n"
+        return f"{brief}\n\n{PAD_NOTE}"
 
     def write(self) -> Path:
         """Lay the project out on disk, from scratch.
