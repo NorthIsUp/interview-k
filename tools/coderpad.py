@@ -131,9 +131,22 @@ def _for_the_pad(source: str) -> str:
     return strip_entry_guard(strip_ts_extension(source))
 
 
+def _dependencies(question: Question) -> dict[str, dict[str, str]]:
+    """A question's own package.json, for whatever its brief allows beyond the stdlib.
+
+    Only the dependency blocks are taken: `.cpad` runs `npm run main`, so the name and the
+    scripts stay ours rather than being something a question can drop by accident.
+    """
+    supplied = question.dir / "package.json"
+    if not supplied.is_file():
+        return {}
+    declared = cast("dict[str, dict[str, str]]", json.loads(supplied.read_text()))
+    return {key: declared[key] for key in ("dependencies", "devDependencies") if key in declared}
+
+
 def typescript_project(question: Question) -> dict[str, str]:
     files = {f"src/{path.name}": _for_the_pad(path.read_text()) for path in question.dir.glob("*.ts")}
-    manifest = {"name": question.name, "private": True, "scripts": {"main": "ts-node src/main.ts"}}
+    manifest = {"name": question.name, "private": True, **_dependencies(question), "scripts": {"main": "ts-node src/main.ts"}}
     return shipped({
         ".cpad": _cpad("npm run main"),
         "package.json": json.dumps(manifest, indent=2) + "\n",

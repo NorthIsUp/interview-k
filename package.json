@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "interview-k: ASCII scatter helper for live-coding interview questions, ported from python",
   "type": "module",
+  "workspaces": [
+    "questions/*/ts"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=22.18"
@@ -11,7 +14,7 @@
     ".": "./questions/kmeans/ts/dataviz.ts"
   },
   "scripts": {
-    "test": "node --test ts/test/*.test.ts questions/*/ts/*.test.ts",
+    "test": "node --test questions/*/ts/*.test.ts",
     "typecheck": "tsc --noEmit",
     "demo": "node questions/kmeans/ts/dataviz.ts"
   },
