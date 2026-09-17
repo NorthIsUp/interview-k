@@ -16,9 +16,9 @@ const { BLOBS } = JSON.parse(readFileSync("src/data.json", "utf8")) as { BLOBS: 
  *
  * Returns one [centroid, its points] pair per cluster.
  */
-function cluster(points: Point[], k: number, maxIter = 100): [Centroid, Point[]][] {
-  throw new Error("not implemented");
+function cluster(points: Point[], k = 3, maxIter = 20): [Centroid, Point[]][] {
+  return []; // your clusters go here — Run draws whatever this returns
 }
 
 show({ points: BLOBS, title: "the data" });
-// once cluster works:  show(cluster(BLOBS, 3));
+show(cluster(BLOBS, 3));

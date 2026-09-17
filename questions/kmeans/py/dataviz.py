@@ -4,12 +4,16 @@
 their solution rather than pasting it into it.
 
 
-    show(points=pts)              -> every point is '·'
-    show(clusters)                -> one mark per group, in list order
-    show(clusters, C)             -> centroids overlaid as their group's digit
+    show(pts)                     -> every point is '·'
+    show(points=pts)              -> the same, spelled as a keyword
+    show(groups)                  -> one mark per group, in list order
+    show(groups, C)               -> centroids overlaid as their group's digit
+    show(kmeans(pts, k))          -> [(centroid, its points), ...] — both at once
+    show({centroid: pts, ...})    -> the same, as a mapping
 
-`clusters` is a list of groups, so a single group is `show(points=pts)` — passing one bare
-list of points is the easy mistake and raises rather than plotting nonsense.
+Each shape is told apart by its first element and they cannot collide: a Point is a 2-tuple
+of numbers, a (centroid, points) pair is a 2-tuple whose first element is one, and a group
+of points is neither.
 
 A group is any iterable of Point — a list, a generator, whatever. `Iterable` rather than
 `Sequence` is deliberate and the opposite of kmeans(): show() makes exactly one pass and
@@ -26,13 +30,14 @@ result is a topology view rather than a scale drawing. Pass them explicitly for 
 from __future__ import annotations  # so `| None` works on Python 3.9
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Sequence
 from itertools import cycle
 from math import isfinite
 from shutil import get_terminal_size
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, overload
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable
 
 MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
 UNLABELED = "·"
@@ -47,6 +52,11 @@ Point = tuple[int, int]
 Centroid = tuple[float, float]
 
 Cell = tuple[int, int]  # (row, col) into the character grid
+Pair = tuple[Centroid, Sequence[Point]]  # what kmeans() returns, one per cluster
+
+# Every shape the first positional argument may take. A group is Iterable rather than
+# Sequence on purpose — show() makes exactly one pass, so a generator is safe here.
+Clusters = dict[Centroid, Sequence[Point]] | Sequence[Point] | Sequence[Iterable[Point]] | Iterable[Pair]
 
 
 def _finite(points: Iterable[Centroid]) -> tuple[list[Centroid], int]:
@@ -85,29 +95,79 @@ def _projection(points: list[Centroid], width: int, height: int) -> Callable[[Ce
     return cell
 
 
-def _groups(clusters: Sequence[Iterable[Point]], points: Iterable[Point] | None) -> Sequence[Iterable[Point]]:
-    """Resolve the two call shapes, and catch the one that would silently plot nonsense."""
+def _is_point(value: object) -> bool:
+    match value:
+        case (int() | float(), int() | float()):
+            return True
+        case _:
+            return False
+
+
+def _resolve(
+    clusters: Clusters,
+    points: Iterable[Point] | None,
+    centroids: Iterable[Centroid] | None,
+) -> tuple[list[Iterable[Point]], list[Centroid]]:
+    """Work out which of the call shapes this is. See the module docstring for all of them.
+
+    Each is told apart by its first element and they cannot collide: a Point is a 2-sequence of
+    numbers, a (centroid, points) pair is a 2-sequence whose first element is one, and a group
+    of points is neither.
+    """
+    given = list(centroids) if centroids is not None else []
     if points is not None:
-        return [points]
-    first = clusters[0] if clusters else None
-    # a non-empty tuple of numbers is a Point, so it is a bare point list, not a cluster list
-    if isinstance(first, tuple) and first and all(isinstance(v, (int, float)) for v in first):
-        raise TypeError("show() takes a list of clusters — use show(points=pts) for one group, show([a, b]) for several")
-    return clusters
+        return [points], given
+    if isinstance(clusters, dict):
+        # The mapping form: keys are the centroids, values their points. Checked before the
+        # match below because a dict iterates as its keys, which is not what it means here.
+        # The cast is because a dict is also an Iterable of its keys, so `Iterable[Pair]`
+        # matches it too and widens them.
+        mapping = cast("dict[Centroid, Sequence[Point]]", clusters)
+        return list(mapping.values()), list(mapping.keys())
+
+    items = list(clusters)
+    match items:
+        case []:
+            return [], given
+        case [(int() | float(), int() | float()), *_]:
+            return [cast("list[Point]", items)], given  # one bare group: what a candidate reaches for first
+        # `not _is_point(group)` is what keeps a two-point group from reading as a pair
+        case [(centroid, group), *_] if _is_point(centroid) and not _is_point(group):
+            pairs = cast("list[Pair]", items)
+            return [pts for _, pts in pairs], [centroid for centroid, _ in pairs]
+        case _:
+            return cast("list[Iterable[Point]]", items), given
+
+
+@overload
+def show(clusters: dict[Centroid, Sequence[Point]], /, *, title: str = "", height: int = 0, width: int = 0) -> None: ...
+@overload
+def show(clusters: Sequence[Pair], /, *, title: str = "", height: int = 0, width: int = 0) -> None: ...
+@overload
+def show(points: Sequence[Point], /, *, title: str = "", height: int = 0, width: int = 0) -> None: ...
+@overload
+def show(clusters: Sequence[Iterable[Point]], /, *, title: str = "", height: int = 0, width: int = 0) -> None: ...
+@overload
+def show(
+    clusters: Sequence[Iterable[Point]], centroids: Iterable[Centroid], /, *, title: str = "", height: int = 0, width: int = 0
+) -> None: ...
+@overload
+def show(*, points: Iterable[Point] | None = None, title: str = "", height: int = 0, width: int = 0) -> None: ...
 
 
 def show(  # ruff: ignore[too-many-arguments] — width/height/title are plotting knobs, keyword-only and defaulted
-    clusters: Sequence[Iterable[Point]] = (),
+    clusters: Clusters = (),
     centroids: Iterable[Centroid] | None = None,
     *,
     points: Iterable[Point] | None = None,
+    title: str = "",
     height: int = 0,
     width: int = 0,
-    title: str = "",
 ) -> None:
     """Print an ASCII scatter, one mark per group. See the module docstring."""
-    groups = [_finite(group) for group in _groups(clusters, points)]
-    centers, dropped = _finite(centroids if centroids is not None else ())
+    resolved, centers = _resolve(clusters, points, centroids)
+    groups = [_finite(group) for group in resolved]
+    centers, dropped = _finite(centers)
     dropped += sum(n for _, n in groups)
     plotted = [point for group, _ in groups for point in group]
 

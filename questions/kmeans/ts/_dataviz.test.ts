@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { show, type Centroid, type Point } from "./dataviz.ts";
+import { MARKS, show, type Centroid, type Point } from "./dataviz.ts";
 import { capture } from "./_capture.ts";
 
 const SQUARE: Point[] = [
@@ -60,7 +60,28 @@ test("degenerate: all points identical", () => {
   assert.ok(capture(() => show({ points: same, width: 20, height: 5 })).includes("·"));
 });
 
-test("bare point list is rejected", () => {
-  // show(SQUARE) reads as four clusters of two numbers — say so instead of plotting noise
-  assert.throws(() => show(SQUARE as unknown as Point[][]), { name: "TypeError", message: /list of clusters/ });
+test("bare point list is one group", () => {
+  // the shape a candidate reaches for first, and it used to throw
+  assert.ok(capture(() => show(SQUARE, { width: 20, height: 5 })).includes("·"));
+});
+
+test("pairs carry their own centroids", () => {
+  // cluster() output goes straight in: the centroids come from the pairs, not a second argument
+  const out = capture(() => show([[[0, 0.5], SQUARE.slice(0, 2)], [[1, 0.5], SQUARE.slice(2)]], { width: 20, height: 5 }));
+  assert.ok(out.includes("0") && out.includes("1"));
+});
+
+test("map form is centroid to points", () => {
+  const groups = new Map<Centroid, Point[]>([
+    [[0, 0.5], SQUARE.slice(0, 2)],
+    [[1, 0.5], SQUARE.slice(2)],
+  ]);
+  const out = capture(() => show(groups, { width: 20, height: 5 }));
+  assert.ok(out.includes("0") && out.includes("1"));
+});
+
+test("a two-point group is not a pair", () => {
+  // [[a, b], [c, d]] is two groups, though each group is shaped exactly like a pair
+  const out = capture(() => show([SQUARE.slice(0, 2), SQUARE.slice(2)], { width: 20, height: 5 }));
+  assert.ok(out.includes(MARKS[0]!) && out.includes(MARKS[1]!), "read as pairs instead of groups");
 });

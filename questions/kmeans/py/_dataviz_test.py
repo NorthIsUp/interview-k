@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from questions.kmeans.py.dataviz import Centroid, Point, show
+from questions.kmeans.py.dataviz import MARKS, Centroid, Point, show
 
 # show() is question-agnostic, so these exercise it on shapes of their own — no question data
 SQUARE: list[Point] = [(0, 0), (0, 1), (1, 0), (1, 1)]
@@ -64,7 +64,28 @@ def test_degenerate_all_points_identical(capsys: pytest.CaptureFixture[str]) -> 
     assert "·" in capsys.readouterr().out
 
 
-def test_bare_point_list_is_rejected() -> None:
-    # show(SQUARE) reads as four clusters of two numbers — say so instead of plotting noise
-    with pytest.raises(TypeError, match="list of clusters"):
-        show(SQUARE)  # type: ignore[arg-type]
+def test_bare_point_list_is_one_group(capsys: pytest.CaptureFixture[str]) -> None:
+    """The shape a candidate reaches for first, and it used to raise."""
+    show(SQUARE, width=20, height=5)
+    assert "·" in capsys.readouterr().out
+
+
+def test_pairs_carry_their_own_centroids(capsys: pytest.CaptureFixture[str]) -> None:
+    """kmeans() output goes straight in: the centroids come from the pairs, not a second arg."""
+    show([((0.0, 0.5), SQUARE[:2]), ((1.0, 0.5), SQUARE[2:])], width=20, height=5)
+    out = capsys.readouterr().out
+    assert "0" in out and "1" in out
+
+
+def test_mapping_form_is_centroid_to_points(capsys: pytest.CaptureFixture[str]) -> None:
+    """`show({centroid: cluster, ...})` — the form the candidate brief promises."""
+    show({(0.0, 0.5): SQUARE[:2], (1.0, 0.5): SQUARE[2:]}, width=20, height=5)
+    out = capsys.readouterr().out
+    assert "0" in out and "1" in out
+
+
+def test_a_two_point_group_is_not_a_pair(capsys: pytest.CaptureFixture[str]) -> None:
+    """[[a, b], [c, d]] is two groups, though each group is shaped exactly like a pair."""
+    show([SQUARE[:2], SQUARE[2:]], width=20, height=5)
+    out = capsys.readouterr().out
+    assert MARKS[0] in out and MARKS[1] in out, "read as (centroid, points) pairs instead of groups"

@@ -83,6 +83,11 @@ def shipped(project: dict[str, str]) -> dict[str, str]:
     return {path: text for path, text in project.items() if not any(part.startswith(PRIVATE) for part in path.split("/"))}
 
 
+def _requirements(question: Question) -> str:
+    supplied = question.dir / "requirements.txt"
+    return supplied.read_text() if supplied.is_file() else "# The interview is stdlib only.\n"
+
+
 def python_project(question: Question) -> dict[str, str]:
     """The template runs `python src/main.py`, so src/ is the package root and imports stay flat."""
     files = {f"src/{path.name}": path.read_text() for path in question.dir.glob("*.py")}
@@ -91,7 +96,8 @@ def python_project(question: Question) -> dict[str, str]:
     return shipped({
         ".cpad": _cpad("python src/main.py"),
         # The template boots with `pip3 install -r requirements.txt`; without it that fails.
-        "requirements.txt": "# The interview is stdlib only.\n",
+        # A question supplies its own when the brief allows more than the stdlib.
+        "requirements.txt": _requirements(question),
         **files,
         "src/data.json": question.datasets.read_text(),
     })

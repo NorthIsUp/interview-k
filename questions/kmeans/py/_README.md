@@ -10,13 +10,18 @@ or a bare REPL.
 ```python
 from dataviz import show
 
-show(points=pts)  # one group -> every point is '·'
-show(clusters)  # one mark per group, in list order
-show(clusters, C)  # centroids overlaid as their group's digit
+show(pts)  # one group -> every point is '·'
+show(points=pts)  # the same, spelled as a keyword
+show(groups)  # one mark per group, in list order
+show(groups, C)  # centroids overlaid as their group's digit
+show(cluster(pts, k))  # [(centroid, its points), ...] — both at once
+show({centroid: pts, ...})  # the same, as a mapping
 ```
 
-`clusters` is a list of groups, so one group is `show(points=pts)`. Passing a
-bare list of points raises rather than plotting nonsense.
+Whatever shape you have, pass it. Each is told apart by its first element and
+they cannot collide: a point is a pair of numbers, a `(centroid, points)` pair
+is a pair whose first element is one, and a group of points is neither — so
+`cluster()`'s own return value goes straight in.
 
 A group is any iterable of any iterable pair — tuples, lists, ndarray rows,
 generators. Dimensions past the first two are ignored. `width`/`height` default

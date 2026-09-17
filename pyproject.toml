@@ -61,7 +61,7 @@ lint.future-annotations = true
 
 [tool.ruff.lint.per-file-ignores]
 "questions/*/py/main.py" = ["ANN", "ARG", "TC", "unnecessary-placeholder"]   # the candidate's stub: unfinished is the point
-"**/*_test.py" = ["ANN", "magic-value-comparison"]
+"**/*_test.py" = ["ANN", "TC", "magic-value-comparison"]
 "**/test_*.py" = ["ANN", "magic-value-comparison"]   # each question grades itself in its own directory
 "scripts/**" = ["debugger", "missing-type-function-argument", "missing-return-type-undocumented-public-function", "shebang-not-executable", "shebang-missing-executable-file"]
 

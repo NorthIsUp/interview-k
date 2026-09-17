@@ -57,6 +57,17 @@ export interface ShowBox {
   title?: string;
 }
 
+const XY = 2; // a Point, a Centroid and a Pair are all 2-arrays; only their contents differ
+
+/** A cluster as cluster() returns it: its centroid, then its points. */
+export type Pair = [Centroid, Iterable<Point>];
+
+/**
+ * Every shape the first argument may take. A group is Iterable rather than Array on purpose —
+ * show() makes exactly one pass, so a generator is safe here.
+ */
+export type Clusters = Map<Centroid, Iterable<Point>> | Point[] | Iterable<Point>[] | Pair[];
+
 /** The single-group call: `show({ points })`, TypeScript's stand-in for a keyword arg. */
 export interface ShowSpec extends ShowBox {
   points: Iterable<Point>;
@@ -102,25 +113,55 @@ function projection(points: Centroid[], width: number, height: number): (point: 
   };
 }
 
-/** Catch the call that would otherwise plot nonsense: one bare list of points as clusters. */
-function checked(clusters: Iterable<Point>[]): Iterable<Point>[] {
-  const head = clusters[0];
-  if (Array.isArray(head) && typeof head[0] === "number") {
-    throw new TypeError("show() takes a list of clusters — use show({ points }) for one group, show([a, b]) for several");
+const isPoint = (value: unknown): value is Point =>
+  Array.isArray(value) && value.length === XY && value.every((v) => typeof v === "number");
+
+/** A [centroid, its points] pair — what cluster() returns, one per cluster. */
+const isPair = (value: unknown): value is Pair =>
+  Array.isArray(value) && value.length === XY && isPoint(value[0]) && !isPoint(value[1]);
+
+/**
+ * Work out which call shape this is. See the module docstring for all of them.
+ *
+ * Each is told apart by its first element and they cannot collide: a Point is a 2-array of
+ * numbers, a pair is a 2-array whose first element is one, and a group of points is neither.
+ */
+function resolve(first: Clusters, centroids: Iterable<Centroid> | undefined): [Iterable<Point>[], Iterable<Centroid>] {
+  if (first instanceof Map) return [[...first.values()], [...first.keys()]];
+
+  const items = [...first];
+  if (items.length === 0) return [[], centroids ?? []];
+  if (isPoint(items[0])) return [[items as Point[]], centroids ?? []]; // one bare group
+  if (isPair(items[0])) {
+    const pairs = items as Pair[];
+    return [pairs.map(([, pts]) => pts), pairs.map(([centroid]) => centroid)];
   }
-  return clusters;
+  return [items as Iterable<Point>[], centroids ?? []];
 }
 
+export function show(clusters: Map<Centroid, Iterable<Point>>, box?: ShowBox): void;
+export function show(clusters: Pair[], box?: ShowBox): void;
+export function show(points: Point[], box?: ShowBox): void;
 export function show(clusters: Iterable<Point>[], centroids?: Iterable<Centroid>, box?: ShowBox): void;
+// after the centroids form, so `show(groups, C)` still picks that one — a box is not iterable
+export function show(clusters: Iterable<Point>[], box?: ShowBox): void;
 export function show(spec: ShowSpec): void;
 
 /** Print an ASCII scatter, one mark per group. See the module docstring. */
-export function show(first: Iterable<Point>[] | ShowSpec = [], centroids?: Iterable<Centroid>, box: ShowBox = {}): void {
-  const spec = Array.isArray(first) ? null : first;
-  const opts = spec ?? { ...box, centroids };
+export function show(
+  first: Clusters | ShowSpec = [],
+  centroids?: Iterable<Centroid> | ShowBox,
+  box: ShowBox = {},
+): void {
+  const spec = Array.isArray(first) || first instanceof Map ? null : first;
+  // the 2-arg overloads pass a box where the 3-arg one passes centroids
+  const asBox = centroids !== undefined && !(Symbol.iterator in Object(centroids)) ? (centroids as ShowBox) : undefined;
+  const given = asBox ? undefined : (centroids as Iterable<Centroid> | undefined);
+  const opts = spec ?? { ...(asBox ?? box) };
 
-  const groups = (spec ? [spec.points] : checked(first as Iterable<Point>[])).map(finite);
-  const [centers, centroidsDropped] = finite(opts.centroids ?? []);
+  const [resolved, found] = spec ? [[spec.points], spec.centroids ?? []] : resolve(first as Clusters, given);
+  const groups = resolved.map(finite);
+  const [centers, centroidsDropped] = finite(found);
   const dropped = centroidsDropped + groups.reduce((sum, [, n]) => sum + n, 0);
   const plotted = groups.flatMap(([group]) => group);
 

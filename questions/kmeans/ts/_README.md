@@ -8,15 +8,18 @@ the types itself). It sits beside the stub it serves, in this question's `ts/`.
 ```ts
 import { show } from "./dataviz.ts";
 
-show({ points: TWENTY });                         // one group -> every point is '·'
+show(pts);                                        // one group -> every point is '·'
+show({ points: pts });                            // the same, as an object
 show([left, right]);                              // one mark per group
 show([left, right], C, { title: "k=2" });         // centroids as their group's digit
+show(cluster(pts, k));                            // [[centroid, its points], ...]
+show(new Map([[centroid, pts]]));                 // the same, as a Map
 ```
 
-Same two call shapes as Python. The object form is what Python spells
-`show(points=pts)` — TypeScript has no keyword arguments, so the single-group
-call takes an object instead. Passing a bare list of points throws rather than
-plotting nonsense.
+Same shapes as Python, bar one: the mapping form is a `Map`, because a JS object
+cannot key on a tuple. The object form is what Python spells `show(points=pts)` —
+TypeScript has no keyword arguments, so the single-group call takes an object
+instead.
 
 A group is any `Iterable<Point>` — an array, a generator, whatever. `Iterable`
 rather than `Array` is deliberate and the opposite of the k-means signature:

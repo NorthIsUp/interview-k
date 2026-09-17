@@ -1,7 +1,7 @@
 """Your solution. Press Run to execute this file."""
 
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 from dataviz import show
@@ -15,16 +15,16 @@ DATASETS: dict[str, list[Point]] = {
 BLOBS = DATASETS["BLOBS"]
 
 
-def cluster(points: Sequence[Point], k: int, max_iter: int = 100) -> Iterable[tuple[Centroid, list[Point]]]:
+def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence[tuple[Centroid, list[Point]]]:
     """Cluster points into k groups.
 
     k: number of clusters, 1 <= k <= len(points)
 
     Returns one (centroid, its points) pair per cluster.
     """
-    ...
+    return []  # your clusters go here — Run draws whatever this returns
 
 
 if __name__ == "__main__":
     show(points=BLOBS, title="the data")
-    # once cluster works:  show(cluster(BLOBS, 3))
+    show(cluster(BLOBS, 3))
