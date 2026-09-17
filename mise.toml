@@ -47,7 +47,6 @@ for q; do
   [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py" > "$q/common/data.json"
   true
 done
-uv run python -m tools.packet
 """
 
 # ── checks ──────────────────────────────────────────────────────────────────

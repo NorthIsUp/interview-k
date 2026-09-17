@@ -5,14 +5,12 @@ plus `show()`, a dependency-free ASCII scatter that renders anywhere a candidate
 might be typing.
 
 > [!WARNING]
-> This repo contains the **answer key** — `_packet.md` holds the rubric, the hint
-> ladder and the expected failure modes. Don't send a candidate the repo link.
+> `_packet.md` is the interviewer's scoring rubric. Don't send a candidate the repo link.
 
 | path | what |
 |---|---|
 | `questions/<name>/` | one question: the brief, the data, and a directory per language |
 | `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
-| `tools/packet.py` | re-embeds each question's library into its `_packet.md` |
 | `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
 
 ## A question directory
@@ -26,7 +24,7 @@ has a `common/question.toml`.
 | `common/question.toml` | the title the CoderPad bank knows it by, and the pad description |
 | `common/data.py` | prints the dataset to stdout; `mise run sync` redirects it into `data.json` |
 | `common/data.json` | generated but committed — every language reads it |
-| `_packet.md` | interviewer packet: problem, rubric, hint ladder, timeline |
+| `_packet.md` | interviewer scoring rubric and scorecard |
 | `py/` `ts/` | one directory per language |
 
 A language directory is exactly what the candidate opens, hand-made for that
@@ -60,7 +58,7 @@ Plenty is left unspecified on purpose. Ask.
 
 ```sh
 mise run install       # uv sync + npm ci
-mise run sync          # regenerate every question's data and packet
+mise run sync          # regenerate every question's data.json
 mise run sync kmeans   # just one
 mise run test          # pytest + node --test, both languages
 mise run typecheck     # pyright + tsc

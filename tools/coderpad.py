@@ -241,10 +241,6 @@ class Question:
         return self.root / self.language.tag
 
     @property
-    def packet(self) -> Path:
-        return self.root / "_packet.md"
-
-    @property
     def datasets(self) -> Path:
         return self.root / "common" / "data.json"
 
