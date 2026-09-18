@@ -64,6 +64,10 @@ def test_typescript_project_has_what_the_template_boots() -> None:
     assert {".cpad", "package.json", "src/main.ts", "src/dataviz.ts", "src/data.json"} <= set(project)
     assert _run_command(project) == ["npm", "run", "main"]
     assert json.loads(project["package.json"])["scripts"]["main"] == "ts-node src/main.ts"
+    # npm installs from our manifest and prunes the rest, so the compiler the Run button calls
+    # has to be declared in it — typescript included, or ts-node dies reading its own config.
+    assert {"ts-node", "typescript"} <= set(json.loads(project["package.json"])["devDependencies"])
+    assert json.loads(project["tsconfig.json"])["compilerOptions"]["module"] == "commonjs"
 
 
 def test_the_printer_is_library_code_not_the_candidate_s() -> None:

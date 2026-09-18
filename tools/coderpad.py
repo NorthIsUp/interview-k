@@ -106,8 +106,8 @@ def python_project(question: Question) -> dict[str, str]:
 def strip_ts_extension(source: str) -> str:
     """The repo writes `./dataviz.ts` because node's own type stripping demands the exact path.
 
-    A pad compiles with ts-node, which rejects it — `TS5097: An import path can only end with a
-    '.ts' extension when 'allowImportingTsExtensions' is enabled` — and the pad owns tsconfig.
+    A pad compiles with ts-node under the TS_CONFIG below, which rejects it — `TS5097: An import
+    path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled`.
     """
     return re.sub(r'(from\s+")([^"]+)\.ts(")', r"\1\2\3", source)
 
@@ -144,12 +144,32 @@ def _dependencies(question: Question) -> dict[str, dict[str, str]]:
     return {key: declared[key] for key in ("dependencies", "devDependencies") if key in declared}
 
 
+# The pad boots with ts-node and typescript already in node_modules, but our package.json is
+# the one npm installs from, and npm prunes whatever it does not declare — 302 packages, taking
+# the compiler with it ("sh: 1: ts-node: not found"). Declaring ts-node alone gets further and
+# then dies in its own config reader on an undefined `ts.sys`: typescript is a peer, not a dep.
+TS_TOOLCHAIN = {"ts-node": "^10.9.2", "typescript": "^5.9"}
+
+# ts-node with no tsconfig to find resolves `./dataviz` through the ESM loader, which wants the
+# extension the pad cannot accept (see strip_ts_extension) — ERR_MODULE_NOT_FOUND on line 5 of
+# the stub. CommonJS is the mode the whole tree is written for, so the project states it.
+TS_CONFIG = {"compilerOptions": {"module": "commonjs", "target": "es2022", "esModuleInterop": True}}
+
+
 def typescript_project(question: Question) -> dict[str, str]:
     files = {f"src/{path.name}": _for_the_pad(path.read_text()) for path in question.dir.glob("*.ts")}
-    manifest = {"name": question.name, "private": True, **_dependencies(question), "scripts": {"main": "ts-node src/main.ts"}}
+    declared = _dependencies(question)
+    manifest = {
+        "name": question.name,
+        "private": True,
+        **declared,
+        "devDependencies": TS_TOOLCHAIN | declared.get("devDependencies", {}),
+        "scripts": {"main": "ts-node src/main.ts"},
+    }
     return shipped({
         ".cpad": _cpad("npm run main"),
         "package.json": json.dumps(manifest, indent=2) + "\n",
+        "tsconfig.json": json.dumps(TS_CONFIG, indent=2) + "\n",
         **files,
         "src/data.json": question.datasets.read_text(),
     })
