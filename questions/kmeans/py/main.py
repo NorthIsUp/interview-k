@@ -1,18 +1,25 @@
 """Your solution. Press Run to execute this file."""
 
-import json
 from collections.abc import Sequence
 from pathlib import Path
 
 from dataviz import show
+from pydantic import RootModel
 
 Point = tuple[int, int]  # a data point: pixels, counts, ages
 Centroid = tuple[float, float]  # a cluster center: a mean, so rarely integral
 
 
-def load_datasets() -> dict[str, list[Point]]:
-    data = json.loads(Path(__file__).with_name("data.json").read_text())
-    return {name: [(int(x), int(y)) for x, y in pts] for name, pts in data.items()}
+class Datasets(RootModel[dict[str, list[Point]]]):
+    """data.json is a bare {name: points} mapping, so the model is that mapping itself.
+
+    Validating into `Point` is what turns json's lists into tuples, which a solution
+    reaching for `set(points)` or `{point: label}` needs — a list is not hashable.
+    """
+
+    @classmethod
+    def load(cls, path: Path) -> dict[str, list[Point]]:
+        return cls.model_validate_json(path.read_text()).root
 
 
 def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence[tuple[Centroid, list[Point]]]:
@@ -26,7 +33,7 @@ def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence
 
 
 if __name__ == "__main__":
-    DATASETS = load_datasets()
+    DATASETS = Datasets.load(Path(__file__).with_name("data.json"))
 
     # a small dataset for testing
     TWENTY = DATASETS["TWENTY"]
