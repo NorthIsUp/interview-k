@@ -155,6 +155,18 @@ def show(
 def show(*, points: Iterable[Point] | None = None, title: str = "", height: int = 0, width: int = 0) -> None: ...
 
 
+def _legend(centers: list[Centroid], marks: str, groups: int) -> str:
+    """Which digit on the plot is which centroid, and the mark of the group it belongs to.
+
+    A centroid past the last group gets no mark: the pairing is positional, so there is
+    nothing for it to name.
+    """
+    return "  ".join(
+        f"({cx:.4g}, {cy:.4g}): {index % 10}{marks[index % len(marks)] if index < groups else ''}"
+        for index, (cx, cy) in enumerate(centers)
+    )
+
+
 def show(  # ruff: ignore[too-many-arguments] — width/height/title are plotting knobs, keyword-only and defaulted
     clusters: Clusters = (),
     centroids: Iterable[Centroid] | None = None,
@@ -194,6 +206,8 @@ def show(  # ruff: ignore[too-many-arguments] — width/height/title are plottin
 
     rule = "─" * width
     notes = [note for note in (title, f"{dropped} point(s) unusable" if dropped else "") if note]
+    if centers:
+        notes.append(_legend(centers, marks, len(groups)))
     print(f"┌{rule}")
     print("\n".join("│" + "".join(row) for row in grid))
     print(f"└{rule}  " + "  ·  ".join(notes))

@@ -85,3 +85,20 @@ test("a two-point group is not a pair", () => {
   const out = capture(() => show([SQUARE.slice(0, 2), SQUARE.slice(2)], { width: 20, height: 5 }));
   assert.ok(out.includes(MARKS[0]!) && out.includes(MARKS[1]!), "read as pairs instead of groups");
 });
+
+test("centroids get a legend", () => {
+  const out = capture(() => show([SQUARE.slice(0, 2), SQUARE.slice(2)], [[0, 0.5], [1, 0.5]], { width: 40, height: 5 }));
+  const footer = out.trimEnd().split("\n").at(-1)!;
+  assert.ok(footer.includes(`(0, 0.5): 0${MARKS[0]}`));
+  assert.ok(footer.includes(`(1, 0.5): 1${MARKS[1]}`));
+});
+
+test("no centroids means no legend", () => {
+  const out = capture(() => show({ points: SQUARE, width: 40, height: 5, title: "just points" }));
+  assert.ok(out.trimEnd().split("\n").at(-1)!.endsWith("just points"));
+});
+
+test("a centroid past the last group has no mark", () => {
+  const out = capture(() => show([SQUARE.slice(0, 2)], [[0, 0.5], [1, 0.5]], { width: 40, height: 5 }));
+  assert.ok(out.trimEnd().split("\n").at(-1)!.endsWith("(1, 0.5): 1"));
+});

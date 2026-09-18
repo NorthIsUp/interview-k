@@ -12,11 +12,7 @@ Centroid = tuple[float, float]  # a cluster center: a mean, so rarely integral
 
 def load_datasets() -> dict[str, list[Point]]:
     data = json.loads(Path(__file__).with_name("data.json").read_text())
-    return {name: [(x, y) for x, y in pts] for name, pts in data.items()}
-
-
-DATASETS = load_datasets()
-BLOBS = DATASETS["BLOBS"]
+    return {name: [(int(x), int(y)) for x, y in pts] for name, pts in data.items()}
 
 
 def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence[tuple[Centroid, list[Point]]]:
@@ -30,5 +26,13 @@ def cluster(points: Sequence[Point], k: int = 3, max_iter: int = 20) -> Sequence
 
 
 if __name__ == "__main__":
-    show(points=BLOBS, title="the data")
-    show(cluster(BLOBS, 3))
+    DATASETS = load_datasets()
+
+    # a small dataset for testing
+    TWENTY = DATASETS["TWENTY"]
+
+    # the larger dataset we want to cluster
+    BLOBS = DATASETS["BLOBS"]
+
+    # visualize the dataset first
+    show(points=TWENTY, title="the data")

@@ -145,6 +145,18 @@ function resolve(first: Clusters, centroids: Iterable<Centroid> | undefined): [I
   return [items as Iterable<Point>[], centroids ?? []];
 }
 
+/**
+ * Which digit on the plot is which centroid, and the mark of the group it belongs to.
+ *
+ * A centroid past the last group gets no mark: the pairing is positional, so there is
+ * nothing for it to name.
+ */
+function legend(centers: Centroid[], marks: string, groups: number): string {
+  return centers
+    .map(([cx, cy], index) => `(${g(cx, 4)}, ${g(cy, 4)}): ${index % 10}${index < groups ? marks[index % marks.length] : ""}`)
+    .join("  ");
+}
+
 export function show(clusters: Map<Centroid, Iterable<Point>>, box?: ShowBox): void;
 export function show(clusters: Pair[], box?: ShowBox): void;
 export function show(points: Point[], box?: ShowBox): void;
@@ -210,6 +222,7 @@ export function show(
 
   const rule = "─".repeat(width);
   const notes = [opts.title ?? "", dropped ? `${dropped} point(s) unusable` : ""].filter(Boolean);
+  if (centers.length) notes.push(legend(centers, marks, groups.length));
   console.log(`┌${rule}`);
   console.log(grid.map((row) => "│" + row.join("")).join("\n"));
   console.log(`└${rule}  ` + notes.join("  ·  "));

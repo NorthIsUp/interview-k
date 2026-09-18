@@ -89,3 +89,22 @@ def test_a_two_point_group_is_not_a_pair(capsys: pytest.CaptureFixture[str]) -> 
     show([SQUARE[:2], SQUARE[2:]], width=20, height=5)
     out = capsys.readouterr().out
     assert MARKS[0] in out and MARKS[1] in out, "read as (centroid, points) pairs instead of groups"
+
+
+def test_centroids_get_a_legend(capsys: pytest.CaptureFixture[str]) -> None:
+    """The footer says which digit is which centroid, and the mark of its group."""
+    show([SQUARE[:2], SQUARE[2:]], [(0.0, 0.5), (1.0, 0.5)], width=40, height=5)
+    footer = capsys.readouterr().out.splitlines()[-1]
+    assert f"(0, 0.5): 0{MARKS[0]}" in footer
+    assert f"(1, 0.5): 1{MARKS[1]}" in footer
+
+
+def test_no_centroids_means_no_legend(capsys: pytest.CaptureFixture[str]) -> None:
+    show(points=SQUARE, width=40, height=5, title="just points")
+    assert capsys.readouterr().out.splitlines()[-1].endswith("just points")
+
+
+def test_a_centroid_past_the_last_group_has_no_mark(capsys: pytest.CaptureFixture[str]) -> None:
+    """The centroid-to-group pairing is positional, so a spare centroid names nothing."""
+    show([SQUARE[:2]], [(0.0, 0.5), (1.0, 0.5)], width=40, height=5)
+    assert capsys.readouterr().out.splitlines()[-1].endswith("(1, 0.5): 1")
