@@ -65,6 +65,7 @@ mise run test          # pytest + node --test, both languages
 mise run typecheck     # pyright + tsc
 mise run lint
 
+mise run coderpad:build         # just write build/ — nothing leaves the machine
 mise run coderpad:sync --push   # sync every question to the CoderPad question bank
                                 # each is a project you copy per interview; add
                                 # --recreate to change its files, which changes the id

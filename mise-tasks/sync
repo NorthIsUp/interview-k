@@ -16,6 +16,6 @@ for q; do
   [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py" >"$q/common/data.json"
 done
 
-# the pad projects embed the data the loop above just wrote, so they come after it — and they
-# are built for every question, since a pad is not something you can half-regenerate
-uv run python -m tools.coderpad
+# the pad projects embed the data the loop above just wrote, so this runs after it rather
+# than as a dependency, and it covers every question — a pad is not half-regenerable
+mise run coderpad:build

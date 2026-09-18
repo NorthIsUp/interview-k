@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [MISE] description="Build every question's CoderPad project (--push syncs them, needs ~/.config/coderpad/cookie)"
+# [MISE] description="Push every question to the CoderPad question bank (needs ~/.config/coderpad/cookie); coderpad:build just writes build/"
 # [USAGE] flag "--push" help="Also sync the questions to your CoderPad question bank"
 # [USAGE] flag "--recreate" help="Replace the questions — the only way to change their project files, and it changes their ids"
 set -euo pipefail
