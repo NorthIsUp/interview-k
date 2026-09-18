@@ -11,11 +11,8 @@ Centroid = tuple[float, float]  # a cluster center: a mean, so rarely integral
 
 
 def load_datasets() -> dict[str, list[Point]]:
-    raw_data = json.loads(Path(__file__).with_name("data.json").read_text())
-    return {
-        name: [(int(x), int(y)) for x, y in points]  # points are tuples, but load as lists
-        for name, points in raw_data.items()  # loads the JSON data from the file
-    }
+    data = json.loads(Path(__file__).with_name("data.json").read_text())
+    return {name: [(x, y) for x, y in pts] for name, pts in data.items()}
 
 
 DATASETS = load_datasets()

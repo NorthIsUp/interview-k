@@ -8,7 +8,7 @@ uniform, which is 100:
 Run this (`mise run sync kmeans`) to regenerate common/data.json, which is what everything else
 reads. Nothing imports this module; the JSON is the interface.
 
-    blobs       three well-separated clusters — the baseline that should just work
+    blobs       three well-separated clusters — easy, unless you seed with the first k points
     tight       same shape on a small integer range — int centroids truncate here
     lopsided    cluster sizes 700/250/50 and unequal spread — k-means likes them even
     elongated   anisotropic clusters — k-means carves spheres, so it splits them wrong
@@ -56,11 +56,21 @@ def _blob(rng: random.Random, center: Centroid, n: int, spread: tuple[float, flo
     return [(round(cx + rng.gauss(0, sx)), round(cy + rng.gauss(0, sy))) for _ in range(n)]
 
 
+# Every ordering holds the same 1000 points, so which three lead the list is free to choose —
+# and this one puts all three inside the (80, 30) blob. Seeding with points[:k], which is the
+# first thing anyone writes, then converges to a fixed point 24x worse in inertia: two centroids
+# split that blob between them and the third swallows both of the others. Picked by shuffling
+# with each seed in range(4000) and keeping the one whose points[:3] converged worst; it is
+# stable to 500 iterations, and seeding by sampling across the data still finds the real answer
+# ~77% of the time. A baseline that rewards a better init is worth more than one that cannot.
+BLOB_ORDER = 288
+
+
 def blobs(seed: int = 1) -> list[Point]:
-    """Three well-separated round clusters. The baseline."""
+    """Three well-separated round clusters. The baseline — shape is easy, the ordering is not."""
     r = random.Random(seed)
     pts = _blob(r, (20, 20), 334, (4, 4)) + _blob(r, (80, 30), 333, (4, 4)) + _blob(r, (50, 80), 333, (4, 4))
-    r.shuffle(pts)
+    random.Random(BLOB_ORDER).shuffle(pts)
     return pts
 
 
