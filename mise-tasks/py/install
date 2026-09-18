@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Sync the uv environment"
+set -euo pipefail
+uv sync

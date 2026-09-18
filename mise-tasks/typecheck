@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# [MISE] description="Typecheck both languages"
+# [MISE] depends=["py:typecheck", "ts:typecheck"]

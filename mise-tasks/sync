@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# [MISE] description="Regenerate everything derived: each question's data, and its pad projects under build/"
+# [USAGE] arg "[name]" default="all" help="Question directory under questions/, or 'all'"
+set -euo pipefail
+
+if [ "$usage_name" = all ]; then
+  set -- questions/*/
+else
+  set -- "questions/$usage_name/"
+  [ -d "$1" ] || { echo "no such question: $usage_name (have: $(ls questions | tr '\n' ' '))" >&2; exit 1; }
+fi
+
+for q; do
+  echo "── $(basename "$q")"
+  # common/data.py prints the dataset to stdout; the JSON beside it is what both languages read
+  [ -f "$q/common/data.py" ] && uv run python "$q/common/data.py" >"$q/common/data.json"
+done
+
+# the pad projects embed the data the loop above just wrote, so they come after it — and they
+# are built for every question, since a pad is not something you can half-regenerate
+uv run python -m tools.coderpad

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# [MISE] description="Build every question's CoderPad project (--push syncs them, needs ~/.config/coderpad/cookie)"
+# [USAGE] flag "--push" help="Also sync the questions to your CoderPad question bank"
+# [USAGE] flag "--recreate" help="Replace the questions — the only way to change their project files, and it changes their ids"
+set -euo pipefail
+uv run python -m tools.coderpad ${usage_push:+--push} ${usage_recreate:+--recreate}

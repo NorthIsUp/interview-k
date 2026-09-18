@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# [MISE] description="Run all tests, both languages"
+# [MISE] depends=["py:test", "ts:test"]

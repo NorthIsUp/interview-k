@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Check every CoderPad project compiles and runs the way its pad does — offline"
+set -euo pipefail
+uv run python -m tools.coderpad_check

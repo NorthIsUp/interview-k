@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Auto-fix lint issues"
+set -euo pipefail
+hk fix

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# [MISE] description="Run python tests — the library, the tooling, and every question's suite"
+# [MISE] depends=["sync"]
+set -euo pipefail
+uv run pytest

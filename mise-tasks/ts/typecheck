@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Run tsc"
+set -euo pipefail
+npx tsc --noEmit

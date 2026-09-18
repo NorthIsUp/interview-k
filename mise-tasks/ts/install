@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Install node dependencies"
+set -euo pipefail
+npm ci

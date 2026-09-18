@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# [MISE] description="Install both toolchains"
+# [MISE] depends=["py:install", "ts:install"]

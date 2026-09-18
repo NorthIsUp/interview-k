@@ -13,6 +13,7 @@ might be typing.
 | `RUBRIC.md` | how a candidate is scored — shared by every question |
 | `tools/coderpad.py` | builds a CoderPad project per question per language; `--push` syncs them |
 | `coderpad.toml` | which question in the bank is which of ours; maintained by `coderpad:sync` |
+| `mise-tasks/` | one executable per task; `py/test` is `mise run py:test` |
 
 ## A question directory
 
@@ -58,7 +59,7 @@ Plenty is left unspecified on purpose. Ask.
 
 ```sh
 mise run install       # uv sync + npm ci
-mise run sync          # regenerate every question's data.json
+mise run sync          # every question: data.json, then its pad projects under build/
 mise run sync kmeans   # just one
 mise run test          # pytest + node --test, both languages
 mise run typecheck     # pyright + tsc

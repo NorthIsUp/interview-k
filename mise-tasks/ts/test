@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# [MISE] description="Run typescript tests — the library and every question's port"
+# [MISE] depends=["sync"]
+set -euo pipefail
+node --test questions/*/ts/*.test.ts

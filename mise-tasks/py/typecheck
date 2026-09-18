@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [MISE] description="Run pyright"
+set -euo pipefail
+uv run pyright
