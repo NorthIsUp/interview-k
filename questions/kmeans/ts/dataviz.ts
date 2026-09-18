@@ -41,6 +41,7 @@ function round(x: number): number {
 
 export const MARKS = "●▲■◆★✚✦❖"; // if your terminal misaligns these, use "oxv+*#@%"
 const UNLABELED = "·";
+const HEADING = "centroid"; // the legend's first column
 const BLANK = " ";
 
 /** Data points are integral (pixels, counts, ages) — by convention, not by type. */
@@ -86,12 +87,14 @@ function finite(points: Iterable<Centroid>): [Centroid[], number] {
 }
 
 /** Grid size, defaulting to the terminal with room for borders and the prompt. */
-function terminalBox(width: number, height: number): [number, number] {
+function terminalBox(width: number, height: number, reserved = 0): [number, number] {
   const cols = process.stdout.columns || 80;
   const rows = process.stdout.rows || 24;
   return [
     width || Math.max(20, Math.min(120, cols - 2)), // 2 columns for the │ borders
-    height || Math.max(5, Math.min(60, rows - 4)), // 2 rules, a title, a prompt
+    // `reserved` is the legend: its rows come out of the plot's, so the whole box still
+    // fits on screen. An explicit height is honoured as given.
+    height || Math.max(5, Math.min(60, rows - 4 - reserved)), // 2 rules, a title, a prompt
   ];
 }
 
@@ -146,15 +149,18 @@ function resolve(first: Clusters, centroids: Iterable<Centroid> | undefined): [I
 }
 
 /**
- * Which digit on the plot is which centroid, and the mark of the group it belongs to.
+ * A row per centroid: where it is, the digit drawn for it, the mark of its points.
  *
  * A centroid past the last group gets no mark: the pairing is positional, so there is
  * nothing for it to name.
  */
-function legend(centers: Centroid[], marks: string, groups: number): string {
-  return centers
-    .map(([cx, cy], index) => `(${g(cx, 4)}, ${g(cy, 4)}): ${index % 10}${index < groups ? marks[index % marks.length] : ""}`)
-    .join("  ");
+function legend(centers: Centroid[], marks: string, groups: number): string[] {
+  const coords = centers.map(([cx, cy]) => `(${g(cx, 4)}, ${g(cy, 4)})`);
+  const column = Math.max(HEADING.length, ...coords.map((text) => text.length));
+  return [
+    `│ ${HEADING.padEnd(column)}  i   points`,
+    ...coords.map((text, index) => `│ ${text.padEnd(column)}  ${index % 10}   ${index < groups ? marks[index % marks.length] : ""}`),
+  ];
 }
 
 export function show(clusters: Map<Centroid, Iterable<Point>>, box?: ShowBox): void;
@@ -188,7 +194,7 @@ export function show(
     return;
   }
 
-  const [width, height] = terminalBox(opts.width ?? 0, opts.height ?? 0);
+  const [width, height] = terminalBox(opts.width ?? 0, opts.height ?? 0, centers.length ? centers.length + 2 : 0);
   const cellOf = projection([...plotted, ...centers], width, height);
 
   // Groups overlap, so tally every mark landing in a cell and let the majority hold it.
@@ -222,9 +228,12 @@ export function show(
 
   const rule = "─".repeat(width);
   const notes = [opts.title ?? "", dropped ? `${dropped} point(s) unusable` : ""].filter(Boolean);
-  if (centers.length) notes.push(legend(centers, marks, groups.length));
   console.log(`┌${rule}`);
   console.log(grid.map((row) => "│" + row.join("")).join("\n"));
+  if (centers.length) {
+    console.log(`├${rule}`);
+    console.log(legend(centers, marks, groups.length).join("\n"));
+  }
   console.log(`└${rule}  ` + notes.join("  ·  "));
 }
 

@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 
 MARKS = "●▲■◆★✚✦❖"  # if your terminal misaligns these, use "oxv+*#@%"
 UNLABELED = "·"
+HEADING = "centroid"  # the legend's first column
 BLANK = " "
 
 
@@ -71,12 +72,16 @@ def _finite(points: Iterable[Centroid]) -> tuple[list[Centroid], int]:
     return usable, dropped
 
 
-def _terminal_box(width: int, height: int) -> tuple[int, int]:
-    """Grid size, defaulting to the terminal with room for borders and the prompt."""
+def _terminal_box(width: int, height: int, reserved: int = 0) -> tuple[int, int]:
+    """Grid size, defaulting to the terminal with room for borders and the prompt.
+
+    `reserved` is the legend: its rows come out of the plot's, so the whole box still fits
+    on screen. An explicit height is honoured as given — the caller asked for that plot.
+    """
     cols, rows = get_terminal_size((80, 24))
     return (
         width or max(20, min(120, cols - 2)),  # 2 columns for the │ borders
-        height or max(5, min(60, rows - 4)),  # 2 rules, a title, a prompt
+        height or max(5, min(60, rows - 4 - reserved)),  # 2 rules, a title, a prompt
     )
 
 
@@ -155,16 +160,20 @@ def show(
 def show(*, points: Iterable[Point] | None = None, title: str = "", height: int = 0, width: int = 0) -> None: ...
 
 
-def _legend(centers: list[Centroid], marks: str, groups: int) -> str:
-    """Which digit on the plot is which centroid, and the mark of the group it belongs to.
+def _legend(centers: list[Centroid], marks: str, groups: int) -> list[str]:
+    """A row per centroid: where it is, the digit drawn for it, the mark of its points.
 
     A centroid past the last group gets no mark: the pairing is positional, so there is
     nothing for it to name.
     """
-    return "  ".join(
-        f"({cx:.4g}, {cy:.4g}): {index % 10}{marks[index % len(marks)] if index < groups else ''}"
-        for index, (cx, cy) in enumerate(centers)
-    )
+    coords = [f"({cx:.4g}, {cy:.4g})" for cx, cy in centers]
+    column = max(len(HEADING), *(len(text) for text in coords))
+    rows = [f"│ {HEADING.ljust(column)}  i   points"]
+    rows += [
+        f"│ {text.ljust(column)}  {index % 10}   {marks[index % len(marks)] if index < groups else ''}"
+        for index, text in enumerate(coords)
+    ]
+    return rows
 
 
 def show(  # ruff: ignore[too-many-arguments] — width/height/title are plotting knobs, keyword-only and defaulted
@@ -187,7 +196,7 @@ def show(  # ruff: ignore[too-many-arguments] — width/height/title are plottin
         print(f"(nothing to plot — {dropped} unusable)" if dropped else "(no points)")
         return
 
-    width, height = _terminal_box(width, height)
+    width, height = _terminal_box(width, height, len(centers) + 2 if centers else 0)
     cell_of = _projection(plotted + centers, width, height)
 
     # Groups overlap, so tally every mark landing in a cell and let the majority hold it.
@@ -206,10 +215,11 @@ def show(  # ruff: ignore[too-many-arguments] — width/height/title are plottin
 
     rule = "─" * width
     notes = [note for note in (title, f"{dropped} point(s) unusable" if dropped else "") if note]
-    if centers:
-        notes.append(_legend(centers, marks, len(groups)))
     print(f"┌{rule}")
     print("\n".join("│" + "".join(row) for row in grid))
+    if centers:
+        print(f"├{rule}")
+        print("\n".join(_legend(centers, marks, len(groups))))
     print(f"└{rule}  " + "  ·  ".join(notes))
 
 

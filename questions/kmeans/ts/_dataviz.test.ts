@@ -88,17 +88,20 @@ test("a two-point group is not a pair", () => {
 
 test("centroids get a legend", () => {
   const out = capture(() => show([SQUARE.slice(0, 2), SQUARE.slice(2)], [[0, 0.5], [1, 0.5]], { width: 40, height: 5 }));
-  const footer = out.trimEnd().split("\n").at(-1)!;
-  assert.ok(footer.includes(`(0, 0.5): 0${MARKS[0]}`));
-  assert.ok(footer.includes(`(1, 0.5): 1${MARKS[1]}`));
+  const lines = out.trimEnd().split("\n");
+  assert.ok(lines.at(-5)!.startsWith("├"), "the legend is fenced off from the plot");
+  assert.equal(lines.at(-4), "│ centroid  i   points");
+  assert.equal(lines.at(-3), `│ (0, 0.5)  0   ${MARKS[0]}`);
+  assert.equal(lines.at(-2), `│ (1, 0.5)  1   ${MARKS[1]}`);
 });
 
 test("no centroids means no legend", () => {
-  const out = capture(() => show({ points: SQUARE, width: 40, height: 5, title: "just points" }));
-  assert.ok(out.trimEnd().split("\n").at(-1)!.endsWith("just points"));
+  const lines = capture(() => show({ points: SQUARE, width: 40, height: 5, title: "just points" })).trimEnd().split("\n");
+  assert.ok(lines.at(-1)!.endsWith("just points"));
+  assert.ok(!lines.some((line) => line.startsWith("├")));
 });
 
 test("a centroid past the last group has no mark", () => {
   const out = capture(() => show([SQUARE.slice(0, 2)], [[0, 0.5], [1, 0.5]], { width: 40, height: 5 }));
-  assert.ok(out.trimEnd().split("\n").at(-1)!.endsWith("(1, 0.5): 1"));
+  assert.equal(out.trimEnd().split("\n").at(-2), "│ (1, 0.5)  1   ");
 });

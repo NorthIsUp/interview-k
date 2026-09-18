@@ -92,19 +92,23 @@ def test_a_two_point_group_is_not_a_pair(capsys: pytest.CaptureFixture[str]) -> 
 
 
 def test_centroids_get_a_legend(capsys: pytest.CaptureFixture[str]) -> None:
-    """The footer says which digit is which centroid, and the mark of its group."""
+    """A table inside the box: where each centroid is, its digit, its group's mark."""
     show([SQUARE[:2], SQUARE[2:]], [(0.0, 0.5), (1.0, 0.5)], width=40, height=5)
-    footer = capsys.readouterr().out.splitlines()[-1]
-    assert f"(0, 0.5): 0{MARKS[0]}" in footer
-    assert f"(1, 0.5): 1{MARKS[1]}" in footer
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[-5].startswith("├"), "the legend is fenced off from the plot"
+    assert lines[-4] == "│ centroid  i   points"
+    assert lines[-3] == f"│ (0, 0.5)  0   {MARKS[0]}"
+    assert lines[-2] == f"│ (1, 0.5)  1   {MARKS[1]}"
 
 
 def test_no_centroids_means_no_legend(capsys: pytest.CaptureFixture[str]) -> None:
     show(points=SQUARE, width=40, height=5, title="just points")
-    assert capsys.readouterr().out.splitlines()[-1].endswith("just points")
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[-1].endswith("just points")
+    assert not any(line.startswith("├") for line in lines)
 
 
 def test_a_centroid_past_the_last_group_has_no_mark(capsys: pytest.CaptureFixture[str]) -> None:
     """The centroid-to-group pairing is positional, so a spare centroid names nothing."""
     show([SQUARE[:2]], [(0.0, 0.5), (1.0, 0.5)], width=40, height=5)
-    assert capsys.readouterr().out.splitlines()[-1].endswith("(1, 0.5): 1")
+    assert capsys.readouterr().out.splitlines()[-2] == "│ (1, 0.5)  1   "
